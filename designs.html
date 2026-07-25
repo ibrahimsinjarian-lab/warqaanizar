@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Designs by Warqaa Nazar. Architectural and interior explorations in form, heritage, and belonging."/>
+  <title>Designs · Warqaa Nazar</title>
+  <link rel="stylesheet" href="css/base.css"/>
+  <link rel="stylesheet" href="css/designs.css"/>
+</head>
+<body class="designs-page">
+
+  <!-- ─── NAV ───────────────────────────────────────── -->
+  <header>
+    <nav class="nav" aria-label="Primary navigation">
+      <a class="nav-home" href="index.html">Warqaa Nazar</a>
+      <ul class="nav-links">
+        <li><a href="essays.html">Essays</a></li>
+        <li><a href="designs.html">Designs</a></li>
+        <li><a href="index.html#contact">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- ─── PAGE HEADER ─────────────────────────────── -->
+    <div class="designs-header">
+      <div>
+        <p class="section-label" data-reveal>work</p>
+        <h1 class="designs-page-title" data-reveal="delay-1">Designs</h1>
+      </div>
+      <p class="designs-page-subtitle" data-reveal="delay-2">
+        Architectural and interior explorations
+        in form and heritage.
+      </p>
+    </div>
+
+    <!-- ─── FILTER BAR ──────────────────────────────── -->
+    <div class="designs-filter" role="group" aria-label="Filter designs by type">
+      <button class="filter-pill active" data-filter="all">All</button>
+      <button class="filter-pill" data-filter="interior">Interior design</button>
+      <button class="filter-pill" data-filter="architectural">Architectural</button>
+    </div>
+
+    <!-- ─── MASONRY GRID ─────────────────────────────── -->
+    <!--
+      Grid is populated by designs.js from the designs[] data array.
+      To add a project, add an object to that array and drop your
+      images into the images/ folder, then reference them in the array.
+    -->
+    <div
+      class="designs-grid"
+      role="list"
+      aria-label="Design projects"
+    ></div>
+
+  </main>
+
+  <!-- ─── DETAIL OVERLAY ───────────────────────────── -->
+  <!--
+    Populated dynamically by designs.js when a card is opened.
+    The inner content is replaced on each open, so it starts empty.
+  -->
+  <div
+    class="detail-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Project detail"
+    tabindex="-1"
+  >
+    <button class="detail-close" aria-label="Close project detail">&#215;</button>
+    <div class="detail-overlay-inner"></div>
+  </div>
+
+  <script src="js/main.js"></script>
+  <script src="js/designs.js"></script>
+</body>
+</html>

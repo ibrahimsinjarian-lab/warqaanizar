@@ -1,0 +1,441 @@
+/* ─── HERO LOAD ANIMATION ────────────────────────────── */
+/*
+  Elements start invisible. JS adds .loaded to <html> after the first
+  paint, triggering the transition cascade below. This avoids FOUC
+  because the CSS is render-blocking (loaded before any paint).
+*/
+.hero-text,
+.hero-instagram,
+.hero-botanical,
+.hero-hint {
+  opacity: 0;
+}
+
+.hero-text {
+  transform: translateY(14px);
+  transition: opacity 0.95s ease, transform 0.95s ease;
+}
+
+.hero-instagram {
+  transition: opacity 0.7s ease 0.25s;
+}
+
+.hero-botanical {
+  transition: opacity 1.1s ease 0.45s;
+}
+
+.hero-hint {
+  animation: none;
+  transition: opacity 0.6s ease 0.9s;
+}
+
+html.loaded .hero-text      { opacity: 1; transform: translateY(0); }
+html.loaded .hero-instagram { opacity: 1; }
+html.loaded .hero-botanical { opacity: 1; }
+html.loaded .hero-hint      { animation: hintPulse 2.8s ease-in-out 1.6s infinite; }
+
+/* ─── HERO ───────────────────────────────────────────── */
+.hero {
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--nav-h) + 40px) var(--pad) 80px;
+  overflow: hidden;
+}
+
+/* vertical instagram label on the left edge */
+.hero-instagram {
+  position: absolute;
+  inset-block-end: 48px;
+  inset-inline-start: var(--pad);
+  font-family: var(--f-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--dim);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  transition: color var(--t-mid);
+}
+
+.hero-instagram:hover { color: var(--terra); }
+
+/* centered text block */
+.hero-text {
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+/* the arabic name — placeholder until hand-drawn version is ready */
+.hero-arabic {
+  font-family: var(--f-arabic);
+  font-size: clamp(52px, 9vw, 108px);
+  line-height: 1.1;
+  color: var(--cream);
+  display: block;
+  margin-block-end: 4px;
+  /* keeps arabic text right-to-left */
+  direction: rtl;
+}
+
+/* latin transliteration — tight uppercase tracking */
+.hero-latin {
+  font-family: var(--f-display);
+  font-size: clamp(13px, 2vw, 18px);
+  font-weight: 300;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+  margin-block-end: 20px;
+}
+
+/* role subtitle */
+.hero-role {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.hero-role-dot {
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--terra);
+}
+
+/* scroll hint */
+.hero-hint {
+  position: absolute;
+  inset-block-end: 48px;
+  inset-inline-end: 50%;
+  transform: translateX(50%);
+  font-family: var(--f-mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  animation: hintPulse 2.8s ease-in-out infinite;
+}
+
+.hero-hint-line {
+  width: 1px;
+  height: 32px;
+  background: linear-gradient(to bottom, var(--dim), transparent);
+}
+
+@keyframes hintPulse {
+  0%, 100% { opacity: 0.4; transform: translateX(50%) translateY(0); }
+  50%       { opacity: 0.9; transform: translateX(50%) translateY(6px); }
+}
+
+/* ─── BOTANICAL SVG ───────────────────────────────────── */
+.hero-botanical {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline-end: -48px;
+  width: clamp(180px, 22vw, 310px);
+  height: auto;
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 1;
+  /* route all presentation-attribute colors through CSS */
+  color: var(--terra);
+}
+
+/* SVG presentation attributes have lower specificity than CSS,
+   so this correctly overrides the inlined stroke/fill attributes */
+.hero-botanical path,
+.hero-botanical ellipse,
+.hero-botanical circle,
+.hero-botanical line {
+  stroke: currentColor;
+}
+
+.hero-botanical circle[fill="currentColor"] {
+  fill: currentColor;
+}
+
+/* ─── ABOUT ──────────────────────────────────────────── */
+.about {
+  padding: clamp(80px, 10vw, 140px) var(--pad);
+  display: grid;
+  grid-template-columns: 5fr 7fr;
+  gap: clamp(40px, 6vw, 96px);
+  align-items: start;
+}
+
+/* portrait placeholder */
+.about-portrait {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+/* warm gradient wash */
+.about-portrait::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 40% 70%, #C8B9A8 0%, var(--surface) 70%);
+}
+
+.about-portrait-label {
+  position: absolute;
+  inset-block-end: 16px;
+  inset-inline-start: 16px;
+  font-family: var(--f-mono);
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+  z-index: 2;
+}
+
+/* right column */
+.about-body {
+  padding-block-start: 8px;
+}
+
+.about-tagline {
+  font-family: var(--f-display);
+  font-style: italic;
+  font-size: clamp(22px, 3.2vw, 36px);
+  font-weight: 300;
+  line-height: 1.35;
+  color: var(--cream);
+  margin-block-end: 28px;
+}
+
+.about-text {
+  font-family: var(--f-body);
+  font-size: 17px;
+  line-height: 1.85;
+  color: var(--muted);
+  margin-block-end: 32px;
+}
+
+.about-text p + p {
+  margin-block-start: 16px;
+}
+
+.about-link {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--terra);
+  border-bottom: 1px solid currentColor;
+  padding-block-end: 1px;
+  transition: color var(--t-mid);
+}
+
+.about-link:hover { color: var(--blush); }
+
+/* ─── NAV CARDS ──────────────────────────────────────── */
+.cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: clamp(340px, 55vw, 640px);
+}
+
+.card-link {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: clamp(24px, 4vw, 52px);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+/* terracotta bleed on hover — comes from bottom-left */
+.card-link::before {
+  content: '';
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline-start: 0;
+  width: 100%;
+  height: 0%;
+  background: var(--terra);
+  opacity: 0.08;
+  transition: height 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-link:hover::before { height: 100%; }
+
+/* vertical divider between cards */
+.card-link:first-child {
+  border-inline-end: 1px solid var(--border);
+}
+
+.card-inner {
+  position: relative;
+  z-index: 2;
+}
+
+.card-eyebrow {
+  font-family: var(--f-mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-block-end: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: color var(--t-mid);
+}
+
+.card-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 1px;
+  background: var(--dim);
+  transition: background var(--t-mid), width var(--t-mid);
+}
+
+.card-link:hover .card-eyebrow {
+  color: var(--terra);
+}
+
+.card-link:hover .card-eyebrow::before {
+  background: var(--terra);
+  width: 28px;
+}
+
+.card-title {
+  font-family: var(--f-display);
+  font-style: italic;
+  font-size: clamp(32px, 5vw, 64px);
+  font-weight: 300;
+  color: var(--cream);
+  line-height: 1.05;
+  margin-block-end: 16px;
+  transition: color var(--t-mid);
+}
+
+.card-link:hover .card-title { color: var(--cream); }
+
+.card-desc {
+  font-family: var(--f-body);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: 28ch;
+}
+
+.card-arrow {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  font-size: 18px;
+  color: var(--dim);
+  padding: clamp(20px, 3vw, 40px);
+  transition: color var(--t-mid), transform var(--t-mid);
+}
+
+.card-link:hover .card-arrow {
+  color: var(--terra);
+  transform: translate(3px, -3px);
+}
+
+/* ─── CONTACT FOOTER ─────────────────────────────────── */
+.contact {
+  padding: 48px var(--pad);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(24px, 6vw, 80px);
+  border-block-start: 1px solid var(--border);
+}
+
+.contact-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.contact-label {
+  font-family: var(--f-type);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.contact-value {
+  font-family: var(--f-type);
+  font-size: 14px;
+  color: var(--muted);
+  transition: color var(--t-mid);
+}
+
+.contact-value:hover { color: var(--terra); }
+
+.contact-sep {
+  width: 1px;
+  height: 36px;
+  background: var(--border);
+}
+
+/* ─── RESPONSIVE ─────────────────────────────────────── */
+@media (max-width: 860px) {
+  .about {
+    grid-template-columns: 1fr;
+  }
+
+  .about-portrait {
+    max-height: 380px;
+    aspect-ratio: unset;
+  }
+
+  .cards {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .card-link {
+    min-height: 240px;
+  }
+
+  .card-link:first-child {
+    border-inline-end: none;
+    border-block-end: 1px solid var(--border);
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-instagram {
+    display: none;
+  }
+
+  .contact {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .contact-sep {
+    width: 40px;
+    height: 1px;
+  }
+}

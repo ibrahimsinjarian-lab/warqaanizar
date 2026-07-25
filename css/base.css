@@ -1,0 +1,316 @@
+/* ─── FONTS ─────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400;1,600&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Space+Mono:wght@400;700&family=Special+Elite&display=swap');
+
+/* ─── TOKENS ─────────────────────────────────────────── */
+:root {
+  /* palette — warm parchment light theme */
+  --bg:          #F5F0EA;
+  --surface:     #EDE7DE;
+  --surface-2:   #E3DAD0;
+  --border:      #D4C9BD;
+  --terra:       #96502E;
+  --blush:       #B57870;
+  --cream:       #1C1714;
+  --muted:       #7A6E64;
+  --dim:         #B8AFA6;
+  --overlay-bg:  rgba(245, 240, 234, 0.98);
+
+  /* typefaces */
+  --f-arabic:    'Amiri', Georgia, serif;
+  --f-display:   'Cormorant Garamond', Georgia, serif;
+  --f-body:      'EB Garamond', Georgia, serif;
+  --f-mono:      'Space Mono', 'Courier New', monospace;
+  --f-type:      'Special Elite', 'Courier New', monospace;
+
+  /* spacing */
+  --nav-h:       64px;
+  --pad:         clamp(24px, 5vw, 80px);
+  --pad-sm:      clamp(16px, 3vw, 40px);
+
+  /* radius */
+  --r:           2px;
+
+  /* transitions */
+  --t-fast:      0.2s ease;
+  --t-mid:       0.35s ease;
+  --t-slow:      0.6s ease;
+}
+
+/* ─── RESET ─────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  background: var(--bg);
+  color: var(--cream);
+  font-family: var(--f-body);
+  font-size: 18px;
+  line-height: 1.75;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+ul, ol { list-style: none; }
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img, video {
+  display: block;
+  max-width: 100%;
+}
+
+button {
+  font: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+}
+
+::selection {
+  background: var(--terra);
+  color: var(--bg);
+}
+
+/* focus ring that matches the aesthetic */
+:focus-visible {
+  outline: 1px solid var(--terra);
+  outline-offset: 3px;
+}
+
+/* ─── REDUCED MOTION ─────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ─── NAV ────────────────────────────────────────────── */
+.nav {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline: 0;
+  z-index: 100;
+  height: var(--nav-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--pad);
+  pointer-events: none;
+}
+
+.nav::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, var(--bg) 20%, transparent 100%);
+  z-index: -1;
+}
+
+.nav-home {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  pointer-events: auto;
+  transition: color var(--t-mid);
+}
+
+.nav-home:hover { color: var(--cream); }
+
+.nav-links {
+  display: flex;
+  gap: 28px;
+  pointer-events: auto;
+}
+
+.nav-links a {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  transition: color var(--t-mid);
+  position: relative;
+}
+
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  inset-block-end: -2px;
+  inset-inline-start: 0;
+  width: 0;
+  height: 1px;
+  background: var(--terra);
+  transition: width var(--t-mid);
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+  color: var(--cream);
+}
+
+.nav-links a.active::after,
+.nav-links a:hover::after {
+  width: 100%;
+}
+
+/* ─── TAG CHIP ───────────────────────────────────────── */
+.tag {
+  display: inline-block;
+  font-family: var(--f-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+}
+
+/* ─── SCROLL REVEAL ──────────────────────────────────── */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.75s ease, transform 0.75s ease;
+}
+
+[data-reveal].revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+[data-reveal="delay-1"] { transition-delay: 0.1s; }
+[data-reveal="delay-2"] { transition-delay: 0.2s; }
+[data-reveal="delay-3"] { transition-delay: 0.35s; }
+[data-reveal="delay-4"] { transition-delay: 0.5s; }
+
+/* ─── SECTION LABEL ──────────────────────────────────── */
+.section-label {
+  font-family: var(--f-mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-label::before {
+  content: '';
+  display: inline-block;
+  width: 20px;
+  height: 1px;
+  background: var(--dim);
+}
+
+/* ─── HORIZONTAL RULE ────────────────────────────────── */
+.rule {
+  width: 100%;
+  height: 1px;
+  background: var(--border);
+  border: none;
+}
+
+/* ─── HAMBURGER BUTTON ───────────────────────────────── */
+/* only renders on small screens; injected via JS so nav degrades cleanly */
+.nav-burger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  pointer-events: auto;
+  cursor: pointer;
+  background: none;
+  border: none;
+  z-index: 110;
+}
+
+.nav-burger span {
+  display: block;
+  height: 1px;
+  background: var(--muted);
+  transition: transform var(--t-mid), opacity var(--t-mid), background var(--t-mid);
+  transform-origin: center;
+}
+
+.nav-burger:hover span { background: var(--cream); }
+
+/* open state: two lines cross into an x */
+.nav-open .nav-burger span:nth-child(1) { transform: translateY(6px) rotate(45deg);  background: var(--cream); }
+.nav-open .nav-burger span:nth-child(2) { transform: translateY(-6px) rotate(-45deg); background: var(--cream); }
+
+/* ─── MOBILE NAV PANEL ───────────────────────────────── */
+@media (max-width: 480px) {
+  .nav {
+    padding: 0 var(--pad-sm);
+  }
+
+  .nav-burger {
+    display: flex;
+  }
+
+  /* hide inline links — revealed as a full panel when open */
+  .nav-links {
+    display: none;
+    position: fixed;
+    inset: var(--nav-h) 0 0 0;
+    background: var(--bg);
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 0 var(--pad-sm) 80px;
+    gap: 0;
+    border-block-start: 1px solid var(--border);
+    z-index: 105;
+  }
+
+  .nav-open .nav-links {
+    display: flex;
+  }
+
+  .nav-links li {
+    width: 100%;
+    border-block-end: 1px solid var(--border);
+  }
+
+  .nav-links a {
+    display: block;
+    padding: 22px 0;
+    font-size: 12px;
+    letter-spacing: 0.22em;
+  }
+
+  .nav-links a::after {
+    display: none;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 760px) {
+  .nav {
+    padding: 0 var(--pad-sm);
+  }
+
+  .nav-links {
+    gap: 22px;
+  }
+}
