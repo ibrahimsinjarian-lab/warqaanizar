@@ -70,7 +70,7 @@
 /* ─── MASONRY GRID ───────────────────────────────────── */
 .designs-grid {
   columns: 3;
-  column-gap: 1px;
+  column-gap: 16px;
   padding: 40px var(--pad) 120px;
   column-fill: balance;
 }
@@ -89,11 +89,12 @@
 /* ─── DESIGN CARD ────────────────────────────────────── */
 .design-card {
   break-inside: avoid;
-  margin-block-end: 1px;
+  margin-block-end: 16px;
   cursor: pointer;
   position: relative;
   overflow: hidden;
   display: block;
+  border: 1px solid var(--border);
 }
 
 /* image area */
@@ -367,7 +368,21 @@
   margin-block-start: 18px;
 }
 
-/* ─── RESPONSIVE DETAIL ──────────────────────────────── */
+/* ─── DARK THEME OVERRIDES ───────────────────────────── */
+[data-theme="dark"] .design-card[data-palette="1"] .design-card-img { background: #221508; }
+[data-theme="dark"] .design-card[data-palette="2"] .design-card-img { background: #1A1006; }
+[data-theme="dark"] .design-card[data-palette="3"] .design-card-img { background: #201408; }
+[data-theme="dark"] .design-card[data-palette="4"] .design-card-img { background: #261A0A; }
+[data-theme="dark"] .design-card[data-palette="5"] .design-card-img { background: #1C1106; }
+[data-theme="dark"] .design-card[data-palette="6"] .design-card-img { background: #241508; }
+
+[data-theme="dark"] .design-card-overlay {
+  background: linear-gradient(to top, rgba(12,11,9,0.75) 0%, transparent 55%);
+}
+
+[data-theme="dark"] .scatter-img {
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+}
 @media (max-width: 860px) {
   .detail-scatter {
     height: auto;

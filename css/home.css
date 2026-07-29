@@ -171,6 +171,11 @@ html.loaded .hero-hint      { animation: hintPulse 2.8s ease-in-out 1.6s infinit
   fill: currentColor;
 }
 
+/* slightly more atmospheric in dark mode */
+[data-theme="dark"] .hero-botanical {
+  opacity: 0.75;
+}
+
 /* ─── ABOUT ──────────────────────────────────────────── */
 .about {
   padding: clamp(80px, 10vw, 140px) var(--pad);
@@ -189,12 +194,29 @@ html.loaded .hero-hint      { animation: hintPulse 2.8s ease-in-out 1.6s infinit
   overflow: hidden;
 }
 
-/* warm gradient wash */
+/* gradient wash — only shows behind placeholder; hidden when img loads */
 .about-portrait::before {
   content: '';
   position: absolute;
   inset: 0;
   background: radial-gradient(ellipse at 40% 70%, #C8B9A8 0%, var(--surface) 70%);
+  z-index: 0;
+}
+
+/* real portrait image */
+.about-portrait img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+}
+
+/* dark theme: adjust gradient for dark brown surface */
+[data-theme="dark"] .about-portrait::before {
+  background: radial-gradient(ellipse at 40% 70%, #3A2010 0%, var(--surface) 70%);
 }
 
 .about-portrait-label {
