@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <meta name="description" content="Warqaa Nazar. Writer and designer. A space to re-imagine the ways in which we turn the world around us into homes that reflect us."/>
   <title>Warqaa Nazar</title>
-  <!-- restore saved theme before first paint to avoid flash -->
-  <script>(function(){var t=localStorage.getItem('warqaa-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}());</script>
+  <!-- restore theme: URL param takes priority so navigation carries it reliably -->
+  <script>(function(){var p=(location.search.match(/[?&]theme=(dark|light)/)||[])[1];var s=null;try{s=localStorage.getItem('warqaa-theme');}catch(e){}var t=p||s;if(t==='dark')document.documentElement.setAttribute('data-theme','dark');try{if(p&&p!==s)localStorage.setItem('warqaa-theme',p);}catch(e){}})();</script>
   <link rel="stylesheet" href="css/base.css"/>
   <link rel="stylesheet" href="css/home.css"/>
 </head>
