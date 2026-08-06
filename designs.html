@@ -7,6 +7,8 @@
   <title>Designs · Warqaa Nazar</title>
   <!-- restore theme: URL param takes priority so navigation carries it reliably -->
   <script>(function(){var p=(location.search.match(/[?&]theme=(dark|light)/)||[])[1];var s=null;try{s=localStorage.getItem('warqaa-theme');}catch(e){}var t=p||s;if(t==='dark')document.documentElement.setAttribute('data-theme','dark');try{if(p&&p!==s)localStorage.setItem('warqaa-theme',p);}catch(e){}})();</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
   <link rel="stylesheet" href="css/base.css"/>
   <link rel="stylesheet" href="css/designs.css"/>
 </head>
@@ -27,7 +29,7 @@
   <main>
 
     <!-- ─── PAGE HEADER ─────────────────────────────── -->
-    <div class="designs-header">
+    <div class="designs-header" data-zone="designs-header">
       <div>
         <p class="section-label" data-reveal>work</p>
         <h1 class="designs-page-title" data-reveal="delay-1">Designs</h1>
@@ -75,6 +77,7 @@
     <div class="detail-overlay-inner"></div>
   </div>
 
+  <script src="js/decorations.js"></script>
   <script src="js/main.js"></script>
   <script src="js/designs.js"></script>
 </body>

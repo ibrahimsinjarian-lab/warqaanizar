@@ -7,6 +7,8 @@
   <title>Warqaa Nazar</title>
   <!-- restore theme: URL param takes priority so navigation carries it reliably -->
   <script>(function(){var p=(location.search.match(/[?&]theme=(dark|light)/)||[])[1];var s=null;try{s=localStorage.getItem('warqaa-theme');}catch(e){}var t=p||s;if(t==='dark')document.documentElement.setAttribute('data-theme','dark');try{if(p&&p!==s)localStorage.setItem('warqaa-theme',p);}catch(e){}})();</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
   <link rel="stylesheet" href="css/base.css"/>
   <link rel="stylesheet" href="css/home.css"/>
 </head>
@@ -27,7 +29,7 @@
   <main>
 
     <!-- ─── HERO ─────────────────────────────────────── -->
-    <section class="hero" aria-label="Introduction">
+    <section class="hero" data-zone="hero" aria-label="Introduction">
 
       <!-- instagram side label -->
       <a
@@ -46,8 +48,8 @@
           an <img> tag pointing to your hand drawn calligraphy file,
           or embed it as an inline SVG. The surrounding structure stays as is.
         -->
-        <span class="hero-arabic" lang="ar" aria-label="Warqaa Nazar in Arabic">ورقاء نزار</span>
-        <span class="hero-latin" aria-hidden="true">Warqaa Nazar</span>
+        <span id="site-name-arabic" class="hero-arabic" lang="ar" aria-label="Warqaa Nazar in Arabic">ورقاء نزار</span>
+        <span id="site-name-latin" class="hero-latin" aria-hidden="true">Warqaa Nazar</span>
         <p class="hero-role">
           <span>writer</span>
           <span class="hero-role-dot" aria-hidden="true"></span>
@@ -174,10 +176,11 @@
     </section>
 
     <!-- ─── ABOUT ──────────────────────────────────────── -->
-    <section class="about" aria-label="About Warqaa">
+    <section class="about" data-zone="about" aria-label="About Warqaa">
 
       <div class="about-portrait" data-reveal>
         <img
+          id="site-portrait"
           src="https://i.ibb.co/tTC3Vjf2/Warqaa.jpg"
           alt="Warqaa Nazar"
           loading="eager"
@@ -187,11 +190,11 @@
       <div class="about-body">
         <p class="section-label" data-reveal>about</p>
 
-        <h2 class="about-tagline" data-reveal="delay-1">
+        <h2 id="site-about-tagline" class="about-tagline" data-reveal="delay-1">
           I want to invite people into my own world.
         </h2>
 
-        <div class="about-text" data-reveal="delay-2">
+        <div id="site-about-text" class="about-text" data-reveal="delay-2">
           <p>
             Warqaa Nazar is a writer and designer based between language and space.
             Her practice moves across essays, architectural thinking, and interior work,
@@ -211,6 +214,7 @@
         </div>
 
         <a
+          id="site-instagram-link"
           class="about-link"
           href="https://instagram.com/warqaanazar"
           target="_blank"
@@ -222,7 +226,7 @@
     </section>
 
     <!-- ─── NAV CARDS ──────────────────────────────────── -->
-    <section class="cards" aria-label="Navigate to essays and designs">
+    <section class="cards" data-zone="cards" aria-label="Navigate to essays and designs">
 
       <a class="card-link" href="essays.html" aria-label="Go to essays">
         <span class="card-arrow" aria-hidden="true">&#8599;</span>
@@ -251,18 +255,20 @@
   </main>
 
   <!-- ─── CONTACT FOOTER ───────────────────────────────── -->
-  <footer class="contact" id="contact" aria-label="Contact">
+  <footer class="contact" data-zone="contact" id="contact" aria-label="Contact">
     <div class="contact-item">
       <span class="contact-label">email me</span>
-      <a class="contact-value" href="mailto:warqaa@email.com">warqaa@email.com</a>
+      <a id="site-email" class="contact-value" href="mailto:warqaa@email.com">warqaa@email.com</a>
     </div>
     <div class="contact-sep" aria-hidden="true"></div>
     <div class="contact-item">
       <span class="contact-label">text me</span>
-      <a class="contact-value" href="https://wa.me/9710000000000" target="_blank" rel="noopener noreferrer">+971 00 000 0000</a>
+      <a id="site-whatsapp" class="contact-value" href="https://wa.me/9710000000000" target="_blank" rel="noopener noreferrer">+971 00 000 0000</a>
     </div>
   </footer>
 
+  <script src="js/site-settings.js"></script>
+  <script src="js/decorations.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

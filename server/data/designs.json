@@ -1,0 +1,56 @@
+[
+  {
+    "id": "displaced-artists",
+    "title": "Residency for Displaced Artists",
+    "tag": "architectural design",
+    "category": "architectural",
+    "palette": 1,
+    "images": [],
+    "concept": "<p>A structure conceived as a temporary anchor for those whose creative practice has been interrupted by displacement. The building refuses permanence as a political act, using modular, demountable systems that can be rebuilt elsewhere.</p><p>Every threshold is designed to feel like a choice rather than a boundary. Light enters through recessed clerestories, ensuring that the interior remains independent of whatever is happening outside.</p>"
+  },
+  {
+    "id": "room-that-breathes",
+    "title": "The Room That Breathes",
+    "tag": "interior design",
+    "category": "interior",
+    "palette": 2,
+    "images": [],
+    "concept": "<p>An interior study in how air movement, material porosity, and the positioning of openings can transform a static room into something that feels alive and responsive to its occupants.</p><p>Curtains of raw linen hang floor to ceiling, lifting with cross ventilation. Furniture sits low. The room does not perform comfort, it practices it.</p>"
+  },
+  {
+    "id": "heritage-archive",
+    "title": "Heritage Archive Library",
+    "tag": "school",
+    "category": "architectural",
+    "palette": 3,
+    "images": [],
+    "concept": "<p>A library built around the act of preservation as care. The archive holds oral histories, handwritten documents, and textile records from communities whose knowledge has been systematically excluded from formal institutions.</p><p>The reading room is ringed by a mezzanine of deep shelves, lit only from above so that light falls on the material, not on the reader looking at it.</p>"
+  },
+  {
+    "id": "adaptive-dwelling",
+    "title": "Adaptive Dwelling",
+    "tag": "house",
+    "category": "architectural",
+    "palette": 4,
+    "images": [],
+    "concept": "<p>A house that changes with the family living inside it. Sliding partitions, a reversible kitchen, and convertible sleeping alcoves allow the floorplan to be reconfigured without structural work, supporting different household compositions over time.</p><p>The materiality is intentionally unfinished at first occupancy, leaving room for the inhabitants to mark it as theirs.</p>"
+  },
+  {
+    "id": "gathering-space",
+    "title": "The Gathering Space",
+    "tag": "interior design",
+    "category": "interior",
+    "palette": 5,
+    "images": [],
+    "concept": "<p>Designed in response to a community that had been meeting in car parks and rented rooms for years. The brief was simple: a place where people feel they are not guests.</p><p>The furniture is heavy and cannot be easily cleared away. The walls are made to be written on. The kitchen is central and open. Belonging is built into the structure.</p>"
+  },
+  {
+    "id": "community-kitchen",
+    "title": "Community Kitchen",
+    "tag": "room decor",
+    "category": "interior",
+    "palette": 6,
+    "images": [],
+    "concept": "<p>A kitchen interior designed for shared use by multiple households, balancing individual ownership of tools and ingredients with collective cooking surfaces and storage systems.</p><p>The layout draws from traditional communal cooking structures, where the act of preparing food together is understood as social infrastructure, not just convenience.</p>"
+  }
+]
