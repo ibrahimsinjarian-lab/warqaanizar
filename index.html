@@ -11,6 +11,7 @@
   <script src="js/supabase-client.js"></script>
   <link rel="stylesheet" href="css/base.css"/>
   <link rel="stylesheet" href="css/home.css"/>
+  <link rel="stylesheet" href="css/editor.css"/>
 </head>
 <body>
 
@@ -48,8 +49,8 @@
           an <img> tag pointing to your hand drawn calligraphy file,
           or embed it as an inline SVG. The surrounding structure stays as is.
         -->
-        <span id="site-name-arabic" class="hero-arabic" lang="ar" aria-label="Warqaa Nazar in Arabic">ورقاء نزار</span>
-        <span id="site-name-latin" class="hero-latin" aria-hidden="true">Warqaa Nazar</span>
+        <span id="site-name-arabic" class="hero-arabic" data-editable="settings.name_arabic" lang="ar" aria-label="Warqaa Nazar in Arabic">ورقاء نزار</span>
+        <span id="site-name-latin" class="hero-latin" data-editable="settings.name_latin" aria-hidden="true">Warqaa Nazar</span>
         <p class="hero-role">
           <span>writer</span>
           <span class="hero-role-dot" aria-hidden="true"></span>
@@ -190,11 +191,11 @@
       <div class="about-body">
         <p class="section-label" data-reveal>about</p>
 
-        <h2 id="site-about-tagline" class="about-tagline" data-reveal="delay-1">
+        <h2 id="site-about-tagline" class="about-tagline" data-editable="settings.about_tagline" data-reveal="delay-1">
           I want to invite people into my own world.
         </h2>
 
-        <div id="site-about-text" class="about-text" data-reveal="delay-2">
+        <div id="site-about-text" class="about-text" data-editable="settings.about_text" data-reveal="delay-2">
           <p>
             Warqaa Nazar is a writer and designer based between language and space.
             Her practice moves across essays, architectural thinking, and interior work,
@@ -216,6 +217,7 @@
         <a
           id="site-instagram-link"
           class="about-link"
+          data-editable="settings.instagram"
           href="https://instagram.com/warqaanazar"
           target="_blank"
           rel="noopener noreferrer"
@@ -233,7 +235,7 @@
         <div class="card-inner">
           <p class="card-eyebrow">reading</p>
           <h2 class="card-title">Essays</h2>
-          <p class="card-desc">
+          <p class="card-desc" data-editable="content.home.essays_card_desc">
             On spaces, politics, and the architecture of belonging.
           </p>
         </div>
@@ -244,7 +246,7 @@
         <div class="card-inner">
           <p class="card-eyebrow">looking</p>
           <h2 class="card-title">Designs</h2>
-          <p class="card-desc">
+          <p class="card-desc" data-editable="content.home.designs_card_desc">
             Architectural and interior explorations in form and heritage.
           </p>
         </div>
@@ -258,17 +260,18 @@
   <footer class="contact" data-zone="contact" id="contact" aria-label="Contact">
     <div class="contact-item">
       <span class="contact-label">email me</span>
-      <a id="site-email" class="contact-value" href="mailto:warqaa@email.com">warqaa@email.com</a>
+      <a id="site-email" class="contact-value" data-editable="settings.email" href="mailto:warqaa@email.com">warqaa@email.com</a>
     </div>
     <div class="contact-sep" aria-hidden="true"></div>
     <div class="contact-item">
       <span class="contact-label">text me</span>
-      <a id="site-whatsapp" class="contact-value" href="https://wa.me/9710000000000" target="_blank" rel="noopener noreferrer">+971 00 000 0000</a>
+      <a id="site-whatsapp" class="contact-value" data-editable="settings.whatsapp" href="https://wa.me/9710000000000" target="_blank" rel="noopener noreferrer">+971 00 000 0000</a>
     </div>
   </footer>
 
   <script src="js/site-settings.js"></script>
   <script src="js/decorations.js"></script>
   <script src="js/main.js"></script>
+  <script src="js/editor.js"></script>
 </body>
 </html>

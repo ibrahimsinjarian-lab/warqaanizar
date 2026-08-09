@@ -145,3 +145,26 @@ CREATE TRIGGER essays_updated_at
 CREATE TRIGGER designs_updated_at
     BEFORE UPDATE ON public.designs
     FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
+
+
+-- ================================================================
+-- v2 additions — run after the original schema
+-- ================================================================
+
+-- ── CONTENT (arbitrary key-value page content) ────────────────
+CREATE TABLE IF NOT EXISTS public.content (
+    id         uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+    page       text        NOT NULL,   -- 'home' | 'essays' | 'designs'
+    key        text        NOT NULL,   -- 'card.essays.desc' etc.
+    value      text        NOT NULL DEFAULT '',
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (page, key)
+);
+
+ALTER TABLE public.content ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "public read content"  ON public.content;
+DROP POLICY IF EXISTS "auth write content"   ON public.content;
+CREATE POLICY "public read content"  ON public.content FOR SELECT USING (true);
+CREATE POLICY "auth write content"   ON public.content FOR ALL
+    USING      (auth.role() = 'authenticated')
+    WITH CHECK (auth.role() = 'authenticated');

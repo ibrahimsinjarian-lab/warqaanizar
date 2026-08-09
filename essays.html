@@ -11,6 +11,7 @@
   <script src="js/supabase-client.js"></script>
   <link rel="stylesheet" href="css/base.css"/>
   <link rel="stylesheet" href="css/essays.css"/>
+  <link rel="stylesheet" href="css/editor.css"/>
 </head>
 <body class="essays-page">
 
@@ -83,142 +84,9 @@
       <!-- ─── ESSAY LIST ─────────────────────────────── -->
       <section aria-label="Essay list">
 
-        <ol class="essay-list" role="list">
-
-          <!--
-            To add an essay, duplicate an <li> block.
-            data-category: "general" or "design" (used by the filter).
-            The essay-title links out to a separate essay page when ready.
-            Replace href="#" with the actual file path.
-          -->
-
-          <li
-            class="essay-item"
-            data-category="design, general"
-            data-reveal
-          >
-            <div class="essay-main">
-              <span class="essay-num">01</span>
-              <a href="#" class="essay-title">On the Architecture of Belonging</a>
-              <div class="essay-tags">
-                <span class="tag">[ design psychology ]</span>
-                <span class="tag">[ political philosophy ]</span>
-              </div>
-            </div>
-            <span class="essay-year">2025</span>
-          </li>
-
-          <li
-            class="essay-item"
-            data-category="general"
-            data-reveal
-          >
-            <div class="essay-main">
-              <span class="essay-num">02</span>
-              <a href="#" class="essay-title">What Walls Remember</a>
-              <div class="essay-tags">
-                <span class="tag">[ heritage ]</span>
-                <span class="tag">[ architecture ]</span>
-              </div>
-            </div>
-            <span class="essay-year">2025</span>
-          </li>
-
-          <li
-            class="essay-item"
-            data-category="design"
-            data-reveal
-          >
-            <div class="essay-main">
-              <span class="essay-num">03</span>
-              <a href="#" class="essay-title">The Politics of Interior Space</a>
-              <div class="essay-tags">
-                <span class="tag">[ political philosophy ]</span>
-                <span class="tag">[ design ]</span>
-              </div>
-            </div>
-            <span class="essay-year">2024</span>
-          </li>
-
-          <li
-            class="essay-item"
-            data-category="design"
-            data-reveal
-          >
-            <div class="essay-main">
-              <span class="essay-num">04</span>
-              <a href="#" class="essay-title">Softness as Resistance</a>
-              <div class="essay-tags">
-                <span class="tag">[ design psychology ]</span>
-              </div>
-            </div>
-            <span class="essay-year">2024</span>
-          </li>
-
-          <li
-            class="essay-item"
-            data-category="general"
-            data-reveal
-          >
-            <div class="essay-main">
-              <span class="essay-num">05</span>
-              <a href="#" class="essay-title">Reading Rooms as Acts of Care</a>
-              <div class="essay-tags">
-                <span class="tag">[ general ]</span>
-              </div>
-            </div>
-            <span class="essay-year">2024</span>
-          </li>
-
-          <li
-            class="essay-item"
-            data-category="design, general"
-            data-reveal
-          >
-            <div class="essay-main">
-              <span class="essay-num">06</span>
-              <a href="#" class="essay-title">The Language of Thresholds</a>
-              <div class="essay-tags">
-                <span class="tag">[ design psychology ]</span>
-                <span class="tag">[ heritage ]</span>
-              </div>
-            </div>
-            <span class="essay-year">2023</span>
-          </li>
-
-          <li
-            class="essay-item"
-            data-category="general"
-            data-reveal
-          >
-            <div class="essay-main">
-              <span class="essay-num">07</span>
-              <a href="#" class="essay-title">Who Gets to Name a Place Home</a>
-              <div class="essay-tags">
-                <span class="tag">[ political philosophy ]</span>
-                <span class="tag">[ general ]</span>
-              </div>
-            </div>
-            <span class="essay-year">2023</span>
-          </li>
-
-          <li
-            class="essay-item"
-            data-category="design"
-            data-reveal
-          >
-            <div class="essay-main">
-              <span class="essay-num">08</span>
-              <a href="#" class="essay-title">Material as Memory</a>
-              <div class="essay-tags">
-                <span class="tag">[ design ]</span>
-                <span class="tag">[ heritage ]</span>
-              </div>
-            </div>
-            <span class="essay-year">2023</span>
-          </li>
-
-        </ol>
+        <ol class="essay-list" id="dynamic-essay-list" role="list">
+              <!-- rendered by essays.js from Supabase -->
+            </ol>
 
         <p class="no-results" aria-live="polite">No essays in this category yet.</p>
 
@@ -248,5 +116,6 @@
   <script src="js/decorations.js"></script>
   <script src="js/main.js"></script>
   <script src="js/essays.js"></script>
+  <script src="js/editor.js"></script>
 </body>
 </html>
