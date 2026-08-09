@@ -11,8 +11,8 @@
   ─────────────────────────────────────────────────────────────────
 */
 
-var WARQAA_SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
-var WARQAA_SUPABASE_KEY = 'YOUR_ANON_PUBLIC_KEY_HERE';
+var WARQAA_SUPABASE_URL = 'https://lzaheldwulxbviutgihc.supabase.co';
+var WARQAA_SUPABASE_KEY = 'sb_publishable_fh8AjuWy80u_4xYIU8fj2w_0KjQdUkA';
 
 /*
   supabaseClient is available globally after this script loads.
