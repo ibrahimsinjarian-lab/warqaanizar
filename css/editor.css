@@ -269,6 +269,33 @@ body.wq-edit-mode img.wq-decoration:active { cursor: grabbing; }
   justify-content: center;
 }
 
+/* ── Quick rotate / flip buttons ─────────────────────────────── */
+.wq-flip-row {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 9px;
+}
+
+.wq-qbtn {
+  flex: 1;
+  padding: 5px 3px;
+  background: #F5F0EA;
+  color: #6A5E54;
+  border: 1px solid #D4C9BD;
+  border-radius: 2px;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.wq-qbtn:hover    { background: #EDE7DE; color: #1A1410; border-color: #C4B9AD; }
+.wq-qbtn-on       { background: #8C4A26; color: #fff; border-color: #8C4A26; }
+.wq-qbtn-on:hover { background: #7A3E20; }
+
 /* ── Toasts ──────────────────────────────────────────────────── */
 .wq-toast {
   position: fixed;

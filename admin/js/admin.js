@@ -436,11 +436,12 @@ async function saveSettings() {
 ══════════════════════════════════════════════════ */
 var UP = { file:null, compressedBlob:null, preset:'web', quality:0.82, maxDim:1200, format:'image/jpeg' };
 var PRESETS = {
-  web:      {label:'Web',      quality:0.82, maxDim:1200, desc:'1200px · JPEG 82%'},
-  portrait: {label:'Portrait', quality:0.88, maxDim:1600, desc:'1600px · JPEG 88%'},
-  thumb:    {label:'Thumbnail',quality:0.75, maxDim:600,  desc:'600px  · JPEG 75%'},
-  high:     {label:'High',     quality:0.94, maxDim:2400, desc:'2400px · JPEG 94%'},
-  custom:   {label:'Custom',   quality:0.82, maxDim:1200, desc:'Set below'},
+  raw:      {label:'Original', quality:1,    maxDim:99999, desc:'No compression'},
+  web:      {label:'Web',      quality:0.82, maxDim:1200,  desc:'1200px · JPEG 82%'},
+  portrait: {label:'Portrait', quality:0.88, maxDim:1600,  desc:'1600px · JPEG 88%'},
+  thumb:    {label:'Thumbnail',quality:0.75, maxDim:600,   desc:'600px  · JPEG 75%'},
+  high:     {label:'High',     quality:0.94, maxDim:2400,  desc:'2400px · JPEG 94%'},
+  custom:   {label:'Custom',   quality:0.82, maxDim:1200,  desc:'Set below'},
 };
 
 function renderUploadTool() {
@@ -456,6 +457,12 @@ function renderUploadTool() {
           return '<button class="preset-btn'+(kv[0]===UP.preset?' active':'')+'" data-preset="'+kv[0]+'">'+
             kv[1].label+'<br/><span style="font-size:8px;opacity:.7">'+kv[1].desc+'</span></button>';
         }).join('')+
+      '</div></div>'+
+    '<div id="format-row-wrap"><p style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Output format</p>'+
+      '<div class="presets" id="format-row">'+
+        '<button class="preset-btn active" data-fmt="image/jpeg">JPEG<br/><span style="font-size:8px;opacity:.7">no transparency</span></button>'+
+        '<button class="preset-btn" data-fmt="image/png">PNG<br/><span style="font-size:8px;opacity:.7">keeps transparency</span></button>'+
+        '<button class="preset-btn" data-fmt="image/webp">WebP<br/><span style="font-size:8px;opacity:.7">modern browsers</span></button>'+
       '</div></div>'+
     '<div id="custom-controls" style="'+(UP.preset!=='custom'?'display:none':'')+'">'+
       '<div style="border:1px solid var(--border);border-radius:3px;padding:20px;display:flex;flex-direction:column;gap:14px">'+
@@ -490,11 +497,19 @@ function renderUploadTool() {
   fi.addEventListener('change',function(e){var f=e.target.files[0];if(f)handleUpFile(f);});
   el('preset-row').addEventListener('click',function(e){
     var btn=e.target.closest('.preset-btn');if(!btn)return;
-    document.querySelectorAll('.preset-btn').forEach(function(b){b.classList.remove('active');});
+    document.querySelectorAll('#preset-row .preset-btn').forEach(function(b){b.classList.remove('active');});
     btn.classList.add('active');UP.preset=btn.dataset.preset;
     var p=PRESETS[UP.preset];UP.quality=p.quality;UP.maxDim=p.maxDim;
     el('custom-controls').style.display=UP.preset==='custom'?'':'none';
+    /* hide format selector for raw — format is irrelevant */
+    el('format-row-wrap').style.display=UP.preset==='raw'?'none':'';
     if(UP.file)el('compress-btn').disabled=false;
+  });
+  el('format-row').addEventListener('click',function(e){
+    var btn=e.target.closest('.preset-btn');if(!btn)return;
+    document.querySelectorAll('#format-row .preset-btn').forEach(function(b){b.classList.remove('active');});
+    btn.classList.add('active');
+    UP.format=btn.dataset.fmt;
   });
   el('compress-btn').addEventListener('click',runCompress);
   el('upload-btn').addEventListener('click',runImgBB);
@@ -520,6 +535,20 @@ function handleUpFile(file) {
 async function runCompress() {
   if(!UP.file)return;
   var btn=el('compress-btn');btn.disabled=true;btn.textContent='Compressing...';
+
+  /* Raw — skip canvas entirely, upload original file as-is */
+  if(UP.preset==='raw') {
+    UP.compressedBlob=UP.file;
+    el('pc').src=el('po').src;
+    el('csz').textContent=formatBytes(UP.file.size);
+    el('cdm').textContent=el('odm').textContent+' (original)';
+    el('sbar').style.display='';
+    el('sbar').textContent='Original file — no compression applied. Will upload as-is.';
+    el('upload-btn').disabled=false;
+    btn.disabled=false;btn.textContent='Compress';
+    return;
+  }
+
   try {
     var res=await compressCanvas(UP.file,{maxWidth:UP.maxDim,maxHeight:UP.maxDim,quality:UP.quality,format:UP.format});
     UP.compressedBlob=res.blob;
@@ -538,7 +567,9 @@ async function runImgBB() {
   if(!UP.compressedBlob){toast('Compress the image first','error');return;}
   var btn=el('upload-btn');btn.disabled=true;btn.textContent='Uploading...';
   try {
-    var fname=(UP.file.name||'image').replace(/\.[^.]+$/,'')+'.jpg';
+    /* Use correct extension based on format */
+    var ext = UP.format==='image/png' ? '.png' : UP.format==='image/webp' ? '.webp' : '.jpg';
+    var fname=(UP.file.name||'image').replace(/\.[^.]+$/,'')+ext;
     var url=await imgbbUpload(UP.compressedBlob,fname,apiKey);
     el('url-row').style.display='';el('url-out').value=url;toast('Uploaded. URL ready to copy.');
   } catch(err){toast('Upload failed: '+err.message,'error');}

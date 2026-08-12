@@ -380,8 +380,30 @@
   }
 
   /* ── Edit handles (controls panel) for a decoration ─────────── */
+  /* ── Transform helpers ───────────────────────────────────────── */
+  function buildTransform(rot, flipH, flipV) {
+    var parts = [];
+    if (rot) parts.push('rotate(' + rot + 'deg)');
+    if (flipH) parts.push('scaleX(-1)');
+    if (flipV) parts.push('scaleY(-1)');
+    return parts.join(' ');
+  }
+
+  function parseTransform(str) {
+    var rot = 0, flipH = false, flipV = false;
+    if (!str || str === '0') return { rot: rot, flipH: flipH, flipV: flipV };
+    /* legacy: plain number stored as degrees */
+    if (!isNaN(parseFloat(str)) && !/[a-z]/i.test(str.trim())) {
+      return { rot: parseFloat(str), flipH: false, flipV: false };
+    }
+    var rm = str.match(/rotate\((-?[\d.]+)deg\)/);
+    if (rm) rot = parseFloat(rm[1]);
+    flipH = str.indexOf('scaleX(-1)') !== -1;
+    flipV = str.indexOf('scaleY(-1)') !== -1;
+    return { rot: rot, flipH: flipH, flipV: flipV };
+  }
+
   function addHandles(img) {
-    /* remove any existing handles for this image */
     if (img._wqHandles) img._wqHandles.remove();
 
     var h = document.createElement('div');
@@ -390,13 +412,14 @@
     document.body.appendChild(h);
     img._wqHandles = h;
 
-    var curW   = parseInt(img.style.width)   || 200;
-    var curOp  = parseFloat(img.style.opacity !== '' ? img.style.opacity : 1);
-    var curRot = 0;
-    if (img.style.transform) {
-      var m = img.style.transform.match(/rotate\((-?[\d.]+)deg\)/);
-      if (m) curRot = parseFloat(m[1]);
-    }
+    /* parse current transform state */
+    var parsed = parseTransform(img.style.transform || '');
+    img._rot   = parsed.rot;
+    img._flipH = parsed.flipH;
+    img._flipV = parsed.flipV;
+
+    var curW  = parseInt(img.style.width) || 200;
+    var curOp = parseFloat(img.style.opacity !== '' ? img.style.opacity : 1);
 
     h.innerHTML =
       '<div class="wq-ctrl">' +
@@ -411,7 +434,14 @@
       '</div>' +
       '<div class="wq-ctrl">' +
         '<span class="wq-ctrl-label">Rotation</span>' +
-        '<input type="number" id="wq-rot" min="-180" max="180" step="5" value="' + curRot + '"/>' +
+        '<input type="range" id="wq-rot" min="-180" max="180" step="1" value="' + img._rot + '"/>' +
+        '<span class="wq-ctrl-val" id="wq-rotv">' + img._rot + '°</span>' +
+      '</div>' +
+      '<div class="wq-flip-row">' +
+        '<button class="wq-qbtn" id="wq-rm90">↺ −90°</button>' +
+        '<button class="wq-qbtn" id="wq-rp90">↻ +90°</button>' +
+        '<button class="wq-qbtn' + (img._flipH ? ' wq-qbtn-on' : '') + '" id="wq-fh">⇄ Flip H</button>' +
+        '<button class="wq-qbtn' + (img._flipV ? ' wq-qbtn-on' : '') + '" id="wq-fv">⇅ Flip V</button>' +
       '</div>' +
       '<div class="wq-handle-btns">' +
         '<button class="wq-handle-save">✓ Save to site</button>' +
@@ -420,20 +450,60 @@
 
     positionHandles(img);
 
-    /* live width */
+    function applyTransform() {
+      img.style.transform = buildTransform(img._rot, img._flipH, img._flipV);
+    }
+
+    /* width */
     h.querySelector('#wq-w').addEventListener('input', function () {
       img.style.width = this.value + 'px';
       h.querySelector('#wq-wv').textContent = this.value + 'px';
       positionHandles(img);
     });
-    /* live opacity */
+
+    /* opacity */
     h.querySelector('#wq-op').addEventListener('input', function () {
       img.style.opacity = this.value;
       h.querySelector('#wq-opv').textContent = parseFloat(this.value).toFixed(2);
     });
-    /* live rotation */
+
+    /* rotation slider */
     h.querySelector('#wq-rot').addEventListener('input', function () {
-      img.style.transform = 'rotate(' + this.value + 'deg)';
+      img._rot = parseFloat(this.value);
+      h.querySelector('#wq-rotv').textContent = this.value + '°';
+      applyTransform();
+    });
+
+    /* quick rotate -90 */
+    h.querySelector('#wq-rm90').addEventListener('click', function () {
+      img._rot = Math.round(((img._rot - 90) % 360 + 360) % 360);
+      if (img._rot > 180) img._rot -= 360;
+      h.querySelector('#wq-rot').value = img._rot;
+      h.querySelector('#wq-rotv').textContent = img._rot + '°';
+      applyTransform();
+    });
+
+    /* quick rotate +90 */
+    h.querySelector('#wq-rp90').addEventListener('click', function () {
+      img._rot = Math.round(((img._rot + 90) % 360 + 360) % 360);
+      if (img._rot > 180) img._rot -= 360;
+      h.querySelector('#wq-rot').value = img._rot;
+      h.querySelector('#wq-rotv').textContent = img._rot + '°';
+      applyTransform();
+    });
+
+    /* flip horizontal */
+    h.querySelector('#wq-fh').addEventListener('click', function () {
+      img._flipH = !img._flipH;
+      this.classList.toggle('wq-qbtn-on', img._flipH);
+      applyTransform();
+    });
+
+    /* flip vertical */
+    h.querySelector('#wq-fv').addEventListener('click', function () {
+      img._flipV = !img._flipV;
+      this.classList.toggle('wq-qbtn-on', img._flipV);
+      applyTransform();
     });
 
     /* save */
@@ -454,12 +524,8 @@
       toast('Decoration removed');
     });
 
-    /* reposition on scroll */
     window.addEventListener('scroll', function onScroll() {
-      if (!document.body.contains(img)) {
-        window.removeEventListener('scroll', onScroll);
-        return;
-      }
+      if (!document.body.contains(img)) { window.removeEventListener('scroll', onScroll); return; }
       positionHandles(img);
     }, { passive: true });
   }
@@ -471,7 +537,7 @@
     var top = r.top - h.offsetHeight - 8;
     if (top < 50) top = r.bottom + 8;
     h.style.top  = top + 'px';
-    h.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 250)) + 'px';
+    h.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 260)) + 'px';
   }
 
   /* ── Save decoration position to Supabase ────────────────────── */
@@ -479,16 +545,14 @@
     var zone = img.closest('[data-zone]');
     if (!zone) { toast('Could not find zone', 'err'); return; }
 
-    var zr    = zone.getBoundingClientRect();
-    var ir    = img.getBoundingClientRect();
-    var pTop  = ((ir.top  - zr.top)  / zr.height * 100).toFixed(1) + '%';
-    var pLeft = ((ir.left - zr.left) / zr.width  * 100).toFixed(1) + '%';
-    var pW    = (parseInt(img.style.width) / zr.width * 100).toFixed(1) + '%';
-    var rot   = '0';
-    if (img.style.transform) {
-      var m = img.style.transform.match(/rotate\((-?[\d.]+)deg\)/);
-      if (m) rot = m[1];
-    }
+    var zr   = zone.getBoundingClientRect();
+    var ir   = img.getBoundingClientRect();
+    var pTop = ((ir.top  - zr.top)  / zr.height * 100).toFixed(1) + '%';
+    var pLeft= ((ir.left - zr.left) / zr.width  * 100).toFixed(1) + '%';
+    var pW   = (parseInt(img.style.width) / zr.width * 100).toFixed(1) + '%';
+
+    /* store full CSS transform so flip + rotation both survive reload */
+    var transform = buildTransform(img._rot || 0, img._flipH || false, img._flipV || false);
 
     var payload = {
       zone:       zone.dataset.zone,
@@ -499,21 +563,16 @@
       pos_bottom: null,
       width:      pW,
       opacity:    img.style.opacity || '1',
-      rotation:   rot,
+      rotation:   transform,
       z_index:    50,
     };
 
-    var result;
     var existingId = img.dataset.decorationId;
+    var result = existingId
+      ? await db.from('decorations').update(payload).eq('id', existingId)
+      : await db.from('decorations').insert(payload).select().single();
 
-    if (existingId) {
-      result = await db.from('decorations').update(payload).eq('id', existingId);
-    } else {
-      result = await db.from('decorations').insert(payload).select().single();
-      if (!result.error && result.data) {
-        img.dataset.decorationId = result.data.id;
-      }
-    }
+    if (!existingId && result.data) img.dataset.decorationId = result.data.id;
 
     if (result.error) toast(result.error.message, 'err');
     else toast('Decoration saved');

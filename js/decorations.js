@@ -31,8 +31,13 @@
       img.style.opacity  = (dec.opacity  != null) ? dec.opacity  : 1;
       img.style.zIndex   = (dec.z_index  != null) ? dec.z_index  : 1;
 
-      if (dec.rotation && dec.rotation !== '0') {
-        img.style.transform = 'rotate(' + dec.rotation + 'deg)';
+      if (dec.rotation) {
+        var tr = dec.rotation;
+        /* backward-compat: old records stored plain degrees e.g. "45" or "0" */
+        if (tr && !isNaN(parseFloat(tr)) && !/[a-z]/i.test(tr.trim())) {
+          tr = parseFloat(tr) !== 0 ? 'rotate(' + tr + 'deg)' : '';
+        }
+        if (tr) img.style.transform = tr;
       }
 
       zone.appendChild(img);
