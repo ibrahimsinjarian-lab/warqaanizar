@@ -501,9 +501,25 @@ function renderUploadTool() {
     btn.classList.add('active');UP.preset=btn.dataset.preset;
     var p=PRESETS[UP.preset];UP.quality=p.quality;UP.maxDim=p.maxDim;
     el('custom-controls').style.display=UP.preset==='custom'?'':'none';
-    /* hide format selector for raw — format is irrelevant */
     el('format-row-wrap').style.display=UP.preset==='raw'?'none':'';
-    if(UP.file)el('compress-btn').disabled=false;
+
+    if(UP.preset==='raw' && UP.file) {
+      /* file already loaded — skip compress, go straight to upload */
+      UP.compressedBlob=UP.file;
+      el('compress-btn').disabled=true;
+      el('compress-btn').textContent='No compression';
+      el('upload-btn').disabled=false;
+      el('sbar').style.display='';
+      el('sbar').textContent='Original file selected — no compression will be applied.';
+      if(el('po').src) { el('pc').src=el('po').src; el('csz').textContent=el('osz').textContent; el('cdm').textContent=el('odm').textContent+' (original)'; }
+    } else if(UP.preset!=='raw') {
+      /* switching away from raw — require compress again */
+      UP.compressedBlob=null;
+      el('compress-btn').disabled=!UP.file;
+      el('compress-btn').textContent='Compress';
+      el('upload-btn').disabled=true;
+      el('sbar').style.display='none';
+    }
   });
   el('format-row').addEventListener('click',function(e){
     var btn=e.target.closest('.preset-btn');if(!btn)return;
@@ -525,9 +541,25 @@ function handleUpFile(file) {
   img.onload=function(){
     el('pp').style.display='';el('po').src=url;
     el('osz').textContent=formatBytes(file.size);el('odm').textContent=img.naturalWidth+' x '+img.naturalHeight;
-    el('csz').textContent='';el('cdm').textContent='Not yet compressed';el('pc').src='';
-    el('sbar').style.display='none';el('url-row').style.display='none';
-    el('compress-btn').disabled=false;el('upload-btn').disabled=true;
+
+    if(UP.preset==='raw') {
+      /* raw — no compression needed, go straight to upload */
+      UP.compressedBlob=file;
+      el('pc').src=url;
+      el('csz').textContent=formatBytes(file.size);
+      el('cdm').textContent=img.naturalWidth+' x '+img.naturalHeight+' (original)';
+      el('sbar').style.display='';
+      el('sbar').textContent='Original file selected — no compression will be applied.';
+      el('compress-btn').disabled=true;
+      el('compress-btn').textContent='No compression';
+      el('upload-btn').disabled=false;
+    } else {
+      el('csz').textContent='';el('cdm').textContent='Not yet compressed';el('pc').src='';
+      el('sbar').style.display='none';el('url-row').style.display='none';
+      el('compress-btn').disabled=false;
+      el('compress-btn').textContent='Compress';
+      el('upload-btn').disabled=true;
+    }
   };
   img.src=url;
 }
