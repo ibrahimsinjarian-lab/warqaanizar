@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Bloom, Star } from './Chrome';
-import { Empty, Plate, Prose } from './Bits';
+import { Empty, InlineMd, Plate, Prose } from './Bits';
 import { DesignGrid, EssayList } from './Lists';
 import {
   getDesign,
@@ -12,7 +12,85 @@ import {
   getSettings
 } from '@/lib/queries';
 import { formatDate, path, t, type StringKey } from '@/lib/i18n';
-import type { Locale } from '@/lib/types';
+import type { Design, Essay, Locale } from '@/lib/types';
+
+/** The statement rises line by line, so it is split on its sentences. */
+function sentences(text: string): string[] {
+  return text.split(/(?<=[.!?؟])\s+/).filter(Boolean);
+}
+
+/** The piece before and after this one, for the links at the foot of a page. */
+function neighbours<T extends { slug: string }>(items: T[], slug: string) {
+  const i = items.findIndex((item) => item.slug === slug);
+  if (i < 0) return { previous: null, next: null };
+  return { previous: items[i - 1] ?? null, next: items[i + 1] ?? null };
+}
+
+function CrossNav({
+  locale,
+  line,
+  to,
+  label
+}: {
+  locale: Locale;
+  line: string;
+  to: 'essays' | 'designs';
+  label: string;
+}) {
+  return (
+    <section className="section wrap">
+      <div className="crossnav" data-reveal="">
+        <div>
+          <p className="label bracket">{label}</p>
+          <h2 className="h2" style={{ marginTop: '.6rem' }}>
+            {line}
+          </h2>
+        </div>
+        <Link className="bigarrow" href={path(locale, to)}>
+          <span className="label">{label}</span>
+          <span aria-hidden="true">&#8599;</span>
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+function NextPrev({
+  locale,
+  kind,
+  previous,
+  next,
+  ui
+}: {
+  locale: Locale;
+  kind: 'essays' | 'designs';
+  previous: { slug: string; title: string } | null;
+  next: { slug: string; title: string } | null;
+  ui: Record<string, string>;
+}) {
+  if (!previous && !next) return null;
+  const s = (key: StringKey) => t(locale, key, ui);
+  return (
+    <nav className="nextprev">
+      {previous ? (
+        <Link href={path(locale, `${kind}/${previous.slug}`)}>
+          <p className="label bracket">{s('previous')}</p>
+          <h3 className="h3">{previous.title}</h3>
+        </Link>
+      ) : (
+        <span />
+      )}
+      {next ? (
+        <Link href={path(locale, `${kind}/${next.slug}`)}>
+          <p className="label bracket">{s('next')}</p>
+          <h3 className="h3">{next.title}</h3>
+        </Link>
+      ) : (
+        <span />
+      )}
+    </nav>
+  );
+}
 
 /* ============================ home ============================ */
 
@@ -20,6 +98,7 @@ export async function HomePage({ locale }: { locale: Locale }) {
   const [settings, arabic] = await Promise.all([getSettings(locale), getSettings('ar')]);
   const ui = settings.ui ?? {};
   const s = (key: StringKey) => t(locale, key, ui);
+  const lines = settings.statement ? sentences(settings.statement) : [];
 
   return (
     <>
@@ -67,11 +146,27 @@ export async function HomePage({ locale }: { locale: Locale }) {
           </div>
         </div>
 
-        {settings.statement && (
+        {(lines.length > 0 || settings.statement_aside.length > 0) && (
           <div className="hero__statement">
-            <p className="quote" data-reveal="">
-              {settings.statement}
+            <p className="quote">
+              {lines.map((line, i) => (
+                <span className="splitline" key={i} style={{ ['--d' as string]: `${i * 90}ms` }}>
+                  <span>{line}</span>
+                </span>
+              ))}
             </p>
+            {settings.statement_aside.length > 0 && (
+              <div className="aside" data-reveal="" style={{ ['--d' as string]: '320ms' }}>
+                {settings.statement_aside.map((word, i) => (
+                  <p
+                    className={`label${i === settings.statement_aside.length - 1 ? ' label--accent' : ''}`}
+                    key={word}
+                  >
+                    {word}
+                  </p>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -91,25 +186,49 @@ export async function HomePage({ locale }: { locale: Locale }) {
         </div>
       )}
 
-      {settings.about && (
+      {(settings.about || settings.about_quote) && (
         <section className="section wrap" id="about">
           <div className="about">
             <figure className="about__figure" data-reveal="mask">
               <div className="portrait">
                 <div className="portrait__ground" aria-hidden="true" />
                 <div className="pattern pattern--fade" aria-hidden="true" />
-                <div className="portrait__arch plate plate--arch" style={{ ['--a' as string]: 170, ['--m' as string]: 70 }}>
+                <div
+                  className="portrait__arch plate plate--arch"
+                  style={{ ['--a' as string]: 170, ['--m' as string]: 70 }}
+                >
                   <div className="plate__mark" aria-hidden="true">
                     <Star />
                   </div>
                 </div>
+                {settings.portrait_tag && <span className="portrait__tag label">{settings.portrait_tag}</span>}
               </div>
             </figure>
+
             <div className="about__body">
               <p className="label bracket" data-reveal="">
                 {s('about')}
               </p>
-              <Prose markdown={settings.about} className="prose about__prose" />
+              {settings.about_quote && (
+                <h2 className="h2" data-reveal="" style={{ ['--d' as string]: '80ms' }}>
+                  <InlineMd text={settings.about_quote} />
+                </h2>
+              )}
+              {settings.about && (
+                <div data-reveal="" style={{ ['--d' as string]: '160ms' }}>
+                  <Prose markdown={settings.about} className="prose about__prose" />
+                </div>
+              )}
+              {settings.about_meta.length > 0 && (
+                <div className="about__meta" data-reveal="" style={{ ['--d' as string]: '260ms' }}>
+                  {settings.about_meta.map((row) => (
+                    <div key={row.label}>
+                      <span className="label">{row.label}</span>
+                      <span className="label">{row.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -119,7 +238,10 @@ export async function HomePage({ locale }: { locale: Locale }) {
         <div className="portals">
           <Link className="portal" href={path(locale, 'essays')} data-reveal="">
             <div className="portal__plate">
-              <div className="plate" style={{ ['--a' as string]: 210, ['--m' as string]: 55, ['--tone' as string]: 'var(--olive)' }}>
+              <div
+                className="plate"
+                style={{ ['--a' as string]: 210, ['--m' as string]: 55, ['--tone' as string]: 'var(--olive)' }}
+              >
                 <div className="plate__mark" aria-hidden="true">
                   <Star />
                 </div>
@@ -155,42 +277,51 @@ export async function HomePage({ locale }: { locale: Locale }) {
         </div>
       </section>
 
-      {(settings.email || settings.whatsapp || settings.instagram) && (
-        <section className="section wrap" id="contact">
-          <div className="pattern pattern--fade" aria-hidden="true" style={{ opacity: 0.05 }} />
-          <div className="contact">
-            <div className="contact__title">
-              <p className="label bracket" data-reveal="">
-                {s('getInTouch')}
-              </p>
-            </div>
-            <div className="contact__lines">
-              {settings.email && (
-                <p className="tnote" data-reveal="">
-                  <span>{s('emailMe')}</span>
-                  <a href={`mailto:${settings.email}`} dir="ltr">{settings.email}</a>
-                </p>
-              )}
-              {settings.whatsapp && (
-                <p className="tnote" data-reveal="" style={{ ['--d' as string]: '80ms' }}>
-                  <span>{s('textMe')}</span>
-                  <a href={`https://wa.me/${settings.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener">
-                    <bdi dir="ltr">{settings.whatsapp}</bdi>
-                  </a>
-                </p>
-              )}
-              {settings.instagram && (
-                <p className="tnote" data-reveal="" style={{ ['--d' as string]: '160ms' }}>
-                  <span>{s('follow')}</span>
-                  <a href={`https://www.instagram.com/${settings.instagram}/`} target="_blank" rel="noopener">
-                    <bdi dir="ltr">@{settings.instagram}</bdi>
-                  </a>
-                </p>
-              )}
-            </div>
+      <section className="section wrap" id="contact">
+        <div className="pattern pattern--fade" aria-hidden="true" style={{ opacity: 0.05 }} />
+        <div className="contact">
+          <div className="contact__title">
+            <p className="label bracket" data-reveal="">
+              {s('getInTouch')}
+            </p>
+            {settings.contact_title && (
+              <h2 className="display" data-reveal="" style={{ ['--d' as string]: '80ms' }}>
+                <InlineMd text={settings.contact_title} />
+              </h2>
+            )}
           </div>
-        </section>
-      )}
+          <div className="contact__lines">
+            {settings.email && (
+              <p className="tnote" data-reveal="">
+                <span>{s('emailMe')}</span>
+                <a href={`mailto:${settings.email}`} dir="ltr">
+                  {settings.email}
+                </a>
+              </p>
+            )}
+            {settings.whatsapp && (
+              <p className="tnote" data-reveal="" style={{ ['--d' as string]: '80ms' }}>
+                <span>{s('textMe')}</span>
+                <a
+                  href={`https://wa.me/${settings.whatsapp.replace(/[^0-9]/g, '')}`}
+                  target="_blank"
+                  rel="noopener"
+                >
+                  <bdi dir="ltr">{settings.whatsapp}</bdi>
+                </a>
+              </p>
+            )}
+            {settings.instagram && (
+              <p className="tnote" data-reveal="" style={{ ['--d' as string]: '160ms' }}>
+                <span>{s('follow')}</span>
+                <a href={`https://www.instagram.com/${settings.instagram}/`} target="_blank" rel="noopener">
+                  <bdi dir="ltr">@{settings.instagram}</bdi>
+                </a>
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
     </>
   );
 }
@@ -234,16 +365,24 @@ export async function EssaysPage({ locale }: { locale: Locale }) {
           )}
         </section>
       </div>
+
+      {settings.essays_crossnav && (
+        <CrossNav locale={locale} line={settings.essays_crossnav} to="designs" label={s('designs')} />
+      )}
     </>
   );
 }
 
 export async function EssayPage({ locale, slug }: { locale: Locale; slug: string }) {
-  const essay = await getEssay(locale, slug);
+  const [essay, settings, all] = await Promise.all([
+    getEssay(locale, slug),
+    getSettings(locale),
+    getEssays(locale)
+  ]);
   if (!essay) notFound();
-  const settings = await getSettings(locale);
   const ui = settings.ui ?? {};
   const s = (key: StringKey) => t(locale, key, ui);
+  const { previous, next } = neighbours<Essay>(all, slug);
 
   return (
     <>
@@ -282,6 +421,19 @@ export async function EssayPage({ locale, slug }: { locale: Locale; slug: string
             </div>
           </article>
         </div>
+
+        {settings.instagram && (
+          <section className="section wrap">
+            <div className="tnote" style={{ justifyItems: 'center', textAlign: 'center' }} data-reveal="">
+              <span>{s('follow')}</span>
+              <a href={`https://www.instagram.com/${settings.instagram}/`} target="_blank" rel="noopener">
+                <bdi dir="ltr">@{settings.instagram}</bdi>
+              </a>
+            </div>
+          </section>
+        )}
+
+        <NextPrev locale={locale} kind="essays" previous={previous} next={next} ui={ui} />
       </div>
     </>
   );
@@ -295,41 +447,52 @@ export async function DesignsPage({ locale }: { locale: Locale }) {
   const s = (key: StringKey) => t(locale, key, ui);
 
   return (
-    <section className="wrap">
-      <div className="pagehead">
-        <div className="pagehead__title">
-          <p className="label bracket" data-reveal="">
-            {s('builtAndDrawn')}
-          </p>
-          <h1 className="display" data-reveal="mask">
-            {s('designs')}
-          </h1>
-        </div>
-        {settings.designs_note && (
-          <div className="pagehead__note">
-            <p className="lede" data-reveal="" style={{ ['--d' as string]: '120ms' }}>
-              {settings.designs_note}
+    <>
+      <section className="wrap">
+        <div className="pagehead">
+          <div className="pagehead__title">
+            <p className="label bracket" data-reveal="">
+              {s('builtAndDrawn')}
             </p>
+            <h1 className="display" data-reveal="mask">
+              {s('designs')}
+            </h1>
           </div>
-        )}
-      </div>
+          {settings.designs_note && (
+            <div className="pagehead__note">
+              <p className="lede" data-reveal="" style={{ ['--d' as string]: '120ms' }}>
+                {settings.designs_note}
+              </p>
+            </div>
+          )}
+        </div>
 
-      {designs.length === 0 ? (
-        <Empty message={s('nothingYet')} />
-      ) : (
-        <DesignGrid locale={locale} designs={designs} ui={ui} />
+        {designs.length === 0 ? (
+          <Empty message={s('nothingYet')} />
+        ) : (
+          <DesignGrid locale={locale} designs={designs} ui={ui} />
+        )}
+      </section>
+
+      {settings.designs_crossnav && (
+        <CrossNav locale={locale} line={settings.designs_crossnav} to="essays" label={s('essays')} />
       )}
-    </section>
+    </>
   );
 }
 
 export async function DesignPage({ locale, slug }: { locale: Locale; slug: string }) {
-  const design = await getDesign(locale, slug);
+  const [design, settings, all] = await Promise.all([
+    getDesign(locale, slug),
+    getSettings(locale),
+    getDesigns(locale)
+  ]);
   if (!design) notFound();
-  const [settings, images] = await Promise.all([getSettings(locale), getDesignImages(design.group_id)]);
+  const images = await getDesignImages(design.group_id);
   const ui = settings.ui ?? {};
   const s = (key: StringKey) => t(locale, key, ui);
-  const spots = ['s1', 's2', 's3', 's4', 's5'];
+  const { previous, next } = neighbours<Design>(all, slug);
+  const spots = ['s1', 's2', 's3', 's4'];
 
   return (
     <>
@@ -349,7 +512,11 @@ export async function DesignPage({ locale, slug }: { locale: Locale; slug: strin
                 {design.summary}
               </p>
             )}
-            <div className="article__meta" style={{ justifyContent: 'flex-start', marginTop: '1.2rem' }} data-reveal="">
+            <div
+              className="article__meta"
+              style={{ justifyContent: 'flex-start', marginTop: '1.2rem' }}
+              data-reveal=""
+            >
               {design.kind && <span className="tag">{design.kind}</span>}
               <span className="tag">{s(design.category === 'interior' ? 'interior' : 'architectural')}</span>
             </div>
@@ -361,7 +528,12 @@ export async function DesignPage({ locale, slug }: { locale: Locale; slug: strin
         <section className="section section--tight wrap">
           <div className="scatter">
             {images.slice(0, 4).map((image, i) => (
-              <figure key={image.id} className={spots[i]} data-reveal="mask" data-float={String(1 + (i % 3) * 0.4)}>
+              <figure
+                key={image.id}
+                className={spots[i]}
+                data-reveal="mask"
+                data-float={String(1 + (i % 3) * 0.4)}
+              >
                 <Plate
                   media={image.media}
                   alt={locale === 'ar' ? image.media?.alt_ar : image.media?.alt_en}
@@ -413,13 +585,13 @@ export async function DesignPage({ locale, slug }: { locale: Locale; slug: strin
             )}
             {design.spec_year && (
               <div>
-                <span className="label">{'year'}</span>
+                <span className="label">year</span>
                 <strong>{design.spec_year}</strong>
               </div>
             )}
             {design.spec_status && (
               <div>
-                <span className="label">{'status'}</span>
+                <span className="label">status</span>
                 <strong>{design.spec_status}</strong>
               </div>
             )}
@@ -431,7 +603,11 @@ export async function DesignPage({ locale, slug }: { locale: Locale; slug: strin
         <section className="section section--tight wrap">
           <div className="scatter">
             <figure className="s5" data-reveal="mask" data-float="0.9">
-              <Plate media={images[4].media} alt={locale === 'ar' ? images[4].media?.alt_ar : images[4].media?.alt_en} ratio="16/9" />
+              <Plate
+                media={images[4].media}
+                alt={locale === 'ar' ? images[4].media?.alt_ar : images[4].media?.alt_en}
+                ratio="16/9"
+              />
               <figcaption className="label">
                 05 . {(locale === 'ar' ? images[4].caption_ar : images[4].caption_en) ?? ''}
               </figcaption>
@@ -439,6 +615,8 @@ export async function DesignPage({ locale, slug }: { locale: Locale; slug: strin
           </div>
         </section>
       )}
+
+      <NextPrev locale={locale} kind="designs" previous={previous} next={next} ui={ui} />
     </>
   );
 }

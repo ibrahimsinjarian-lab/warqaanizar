@@ -90,5 +90,12 @@ export interface SiteSettings {
   essays_note: string | null;
   designs_note: string | null;
   location: string | null;
+  statement_aside: string[];
+  about_quote: string | null;
+  about_meta: { label: string; value: string }[];
+  contact_title: string | null;
+  essays_crossnav: string | null;
+  designs_crossnav: string | null;
+  portrait_tag: string | null;
   ui: Record<string, string>;
 }

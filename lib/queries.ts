@@ -21,6 +21,13 @@ const FALLBACK_SETTINGS: Record<Locale, SiteSettings> = {
     essays_note: null,
     designs_note: null,
     location: 'Baghdad, Iraq',
+    statement_aside: [],
+    about_quote: null,
+    about_meta: [],
+    contact_title: null,
+    essays_crossnav: null,
+    designs_crossnav: null,
+    portrait_tag: null,
     ui: {}
   },
   ar: {
@@ -36,6 +43,13 @@ const FALLBACK_SETTINGS: Record<Locale, SiteSettings> = {
     essays_note: null,
     designs_note: null,
     location: 'بغداد، العراق',
+    statement_aside: [],
+    about_quote: null,
+    about_meta: [],
+    contact_title: null,
+    essays_crossnav: null,
+    designs_crossnav: null,
+    portrait_tag: null,
     ui: {}
   }
 };
@@ -49,7 +63,7 @@ export async function getSettings(locale: Locale): Promise<SiteSettings> {
 
   if (error || !data) return FALLBACK_SETTINGS[locale];
   const row = data as SiteSettings;
-  return { ...FALLBACK_SETTINGS[locale], ...row, about: asText(row.about), marquee: row.marquee ?? [], ui: row.ui ?? {} };
+  return { ...FALLBACK_SETTINGS[locale], ...row, about: asText(row.about), marquee: row.marquee ?? [], statement_aside: row.statement_aside ?? [], about_meta: Array.isArray(row.about_meta) ? row.about_meta : [], ui: row.ui ?? {} };
 }
 
 export async function getEssays(locale: Locale): Promise<Essay[]> {

@@ -5,6 +5,12 @@ import type { Media } from '@/lib/types';
 
 marked.setOptions({ gfm: true, breaks: false });
 
+/** A single line that may carry emphasis, such as the large about line. */
+export function InlineMd({ text, className }: { text: string; className?: string }) {
+  const html = marked.parseInline(typeof text === 'string' ? text : '', { async: false }) as string;
+  return <span className={className} dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
 /** Body copy is Markdown. Only admins can write it, so it is rendered as given. */
 export function Prose({ markdown, className }: { markdown: string; className?: string }) {
   // the column was jsonb before the markdown migration, so guard the type
