@@ -1,277 +1,288 @@
-<!DOCTYPE html>
-<html lang="en" dir="ltr">
+<!doctype html>
+<html lang="en" data-theme="light">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="description" content="Warqaa Nazar. Writer and designer. A space to re-imagine the ways in which we turn the world around us into homes that reflect us."/>
-  <title>Warqaa Nazar</title>
-  <!-- restore theme: URL param takes priority so navigation carries it reliably -->
-  <script>(function(){var p=(location.search.match(/[?&]theme=(dark|light)/)||[])[1];var s=null;try{s=localStorage.getItem('warqaa-theme');}catch(e){}var t=p||s;if(t==='dark')document.documentElement.setAttribute('data-theme','dark');try{if(p&&p!==s)localStorage.setItem('warqaa-theme',p);}catch(e){}})();</script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="js/supabase-client.js"></script>
-  <link rel="stylesheet" href="css/base.css"/>
-  <link rel="stylesheet" href="css/home.css"/>
-  <link rel="stylesheet" href="css/editor.css"/>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Warqaa Nizar . writer, designer</title>
+<meta name="description" content="Warqaa Nizar is a writer and designer in Baghdad. Essays and designs about heritage, equality, and the spaces we turn into homes.">
+<meta name="theme-color" content="#f3ede2">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Courier+Prime:wght@400;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/main.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='25' x='4' font-size='24'%3E%E2%9C%BF%3C/text%3E%3C/svg%3E">
+<script>
+  (function () {
+    try {
+      var saved = localStorage.getItem('warqaa-theme');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', saved || (prefersDark ? 'dark' : 'light'));
+    } catch (e) {}
+  })();
+</script>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="grain" aria-hidden="true"></div>
 
-  <!-- ─── NAV ───────────────────────────────────────── -->
-  <header>
-    <nav class="nav" aria-label="Primary navigation">
-      <a class="nav-home" href="index.html">Warqaa Nazar</a>
-      <ul class="nav-links">
-        <li><a href="essays.html">Essays</a></li>
-        <li><a href="designs.html">Designs</a></li>
-        <li><a href="#contact">Contact</a></li>
-      </ul>
-    </nav>
-  </header>
+<!-- shared drawings -->
+<svg width="0" height="0" class="visually-hidden" aria-hidden="true" focusable="false">
+  <defs>
+    <path id="wpetal" d="M0 0 C-30 -34 -30 -74 0 -104 C30 -74 30 -34 0 0 Z"/>
+  </defs>
+  <symbol id="bloom" viewBox="0 0 200 480">
+    <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M100 150 C107 214 89 262 97 322 C105 382 94 428 99 476" stroke-width="2.2"/>
+      <g transform="translate(97 302) rotate(-116) scale(.5 .4)"><use href="#wpetal" fill="currentColor" fill-opacity=".07"/></g>
+      <g transform="translate(99 378) rotate(124) scale(.44 .36)"><use href="#wpetal" fill="currentColor" fill-opacity=".07"/></g>
+      <path d="M98 336 C128 328 143 304 141 274" stroke-width="1.3"/>
+      <g transform="translate(141 274) rotate(16) scale(.3)">
+        <use href="#wpetal" fill="currentColor" fill-opacity=".16"/>
+        <use href="#wpetal" transform="rotate(-24) scale(.82)"/>
+        <use href="#wpetal" transform="rotate(24) scale(.82)"/>
+      </g>
+      <g transform="translate(100 150)">
+        <g fill="currentColor" fill-opacity=".08">
+          <use href="#wpetal" transform="rotate(-78)"/>
+          <use href="#wpetal" transform="rotate(-39)"/>
+          <use href="#wpetal"/>
+          <use href="#wpetal" transform="rotate(39)"/>
+          <use href="#wpetal" transform="rotate(78)"/>
+        </g>
+        <g fill="currentColor" fill-opacity=".18">
+          <use href="#wpetal" transform="rotate(-56) scale(.72)"/>
+          <use href="#wpetal" transform="rotate(-19) scale(.68)"/>
+          <use href="#wpetal" transform="rotate(19) scale(.68)"/>
+          <use href="#wpetal" transform="rotate(56) scale(.72)"/>
+        </g>
+        <g stroke-width="1.1">
+          <g transform="rotate(-72)"><path d="M0 -13 L0 -31"/><circle cy="-34" r="2.1" fill="currentColor"/></g>
+          <g transform="rotate(-54)"><path d="M0 -13 L0 -36"/><circle cy="-39" r="2.1" fill="currentColor"/></g>
+          <g transform="rotate(-36)"><path d="M0 -13 L0 -30"/><circle cy="-33" r="2.1" fill="currentColor"/></g>
+          <g transform="rotate(-18)"><path d="M0 -13 L0 -39"/><circle cy="-42" r="2.1" fill="currentColor"/></g>
+          <g><path d="M0 -13 L0 -33"/><circle cy="-36" r="2.1" fill="currentColor"/></g>
+          <g transform="rotate(18)"><path d="M0 -13 L0 -39"/><circle cy="-42" r="2.1" fill="currentColor"/></g>
+          <g transform="rotate(36)"><path d="M0 -13 L0 -30"/><circle cy="-33" r="2.1" fill="currentColor"/></g>
+          <g transform="rotate(54)"><path d="M0 -13 L0 -36"/><circle cy="-39" r="2.1" fill="currentColor"/></g>
+          <g transform="rotate(72)"><path d="M0 -13 L0 -31"/><circle cy="-34" r="2.1" fill="currentColor"/></g>
+        </g>
+        <circle r="11" fill="currentColor" fill-opacity=".85" stroke="none"/>
+        <circle r="6" fill="none" stroke-width="1"/>
+      </g>
+    </g>
+  </symbol>
+  <symbol id="star8" viewBox="0 0 60 60">
+    <path fill="currentColor" d="M30 4 37.4 15.6 51 15.6 51 29.2 60 30 51 30.8 51 44.4 37.4 44.4 30 56 22.6 44.4 9 44.4 9 30.8 0 30 9 29.2 9 15.6 22.6 15.6Z" opacity=".9"/>
+  </symbol>
+</svg>
 
-  <main>
+<header class="topbar">
+  <a class="brand" href="index.html"><span class="dot" aria-hidden="true"></span> Warqaa Nizar</a>
+  <div class="topbar__right">
+    <a class="navlink is-desktop" href="index.html">Home</a>
+    <a class="navlink is-desktop" href="essays.html">Essays</a>
+    <a class="navlink is-desktop" href="designs.html">Designs</a>
+    <a class="navlink is-desktop" href="#contact">Contact</a>
+    <button class="iconbtn" data-theme-toggle aria-label="Switch to dark mode" aria-pressed="false">
+      <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/></svg>
+    </button>
+    <button class="burger" data-menu-toggle aria-expanded="false" aria-controls="menu" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
 
-    <!-- ─── HERO ─────────────────────────────────────── -->
-    <section class="hero" data-zone="hero" aria-label="Introduction">
+<nav class="menu" id="menu" aria-hidden="true">
+  <svg class="menu__bloom menu__bloom--left" viewBox="0 0 200 480" aria-hidden="true"><use href="#bloom"></use></svg>
+  <svg class="menu__bloom menu__bloom--right" viewBox="0 0 200 480" aria-hidden="true"><use href="#bloom"></use></svg>
+  <div class="menu__inner">
+    <ul class="menu__list">
+      <li style="--i:0"><a href="index.html">Home</a></li>
+      <li style="--i:1"><a href="essays.html">Essays</a></li>
+      <li style="--i:2"><a href="designs.html">Designs</a></li>
+      <li style="--i:3"><a href="#contact">Contact</a></li>
+    </ul>
+    <div class="menu__meta">
+      <span class="label bracket">Baghdad</span>
+      <a class="label label--accent" href="https://www.instagram.com/warqaathinks/" target="_blank" rel="noopener">@warqaathinks</a>
+      <span class="label bracket">writer, designer</span>
+    </div>
+  </div>
+</nav>
 
-      <!-- instagram side label -->
-      <a
-        class="hero-instagram"
-        href="https://instagram.com/warqaanazar"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Instagram profile"
-      >@warqaanazar</a>
+<main id="main">
 
-      <!-- central text -->
-      <div class="hero-text">
-        <!--
-          CALLIGRAPHY PLACEHOLDER
-          Replace the <span class="hero-arabic"> element with
-          an <img> tag pointing to your hand drawn calligraphy file,
-          or embed it as an inline SVG. The surrounding structure stays as is.
-        -->
-        <span id="site-name-arabic" class="hero-arabic" data-editable="settings.name_arabic" lang="ar" aria-label="Warqaa Nazar in Arabic">ورقاء نزار</span>
-        <span id="site-name-latin" class="hero-latin" data-editable="settings.name_latin" aria-hidden="true">Warqaa Nazar</span>
-        <p class="hero-role">
-          <span>writer</span>
-          <span class="hero-role-dot" aria-hidden="true"></span>
-          <span>designer</span>
-        </p>
+  <!-- ============ hero ============ -->
+  <section class="hero wrap">
+    <div class="hero__top">
+      <p class="label bracket" data-reveal>Baghdad, Iraq</p>
+      <a class="label label--accent" href="https://www.instagram.com/warqaathinks/" target="_blank" rel="noopener" data-reveal style="--d:80ms">@warqaathinks</a>
+    </div>
+
+    <div class="lockup">
+      <div class="lockup__bloom lockup__bloom--left" data-reveal style="--d:220ms">
+        <svg viewBox="0 0 200 480" aria-hidden="true"><use href="#bloom"></use></svg>
       </div>
 
-      <!-- botanical illustration -->
-      <!--
-        Signature element: poppy / tulip line drawing in terracotta.
-        Inspired by the botanical photographs provided in the mood board.
-        Placed at bottom-right, partially cropped off the edge.
-      -->
-      <svg
-        class="hero-botanical"
-        viewBox="0 0 280 560"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-hidden="true"
-        focusable="false"
-      >
-        <!-- ─── STEM 1: tallest, rightmost ──────────────── -->
-        <path
-          d="M248 560 C246 510 252 460 244 405 C236 350 244 295 238 240 C232 185 238 145 233 98 C228 58 232 34 228 12"
-          stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
-        />
-
-        <!-- OPEN BLOOM at top of stem 1 -->
-        <!-- 6 petals radiating from center (228, 10) -->
-        <g transform="translate(228, 8)">
-          <ellipse rx="15" ry="30" stroke="currentColor" stroke-width="1"   transform="rotate(0)"/>
-          <ellipse rx="15" ry="30" stroke="currentColor" stroke-width="1"   transform="rotate(60)"/>
-          <ellipse rx="15" ry="30" stroke="currentColor" stroke-width="1"   transform="rotate(120)"/>
-          <ellipse rx="15" ry="30" stroke="currentColor" stroke-width="0.9" transform="rotate(180)"/>
-          <ellipse rx="15" ry="30" stroke="currentColor" stroke-width="0.9" transform="rotate(240)"/>
-          <ellipse rx="15" ry="30" stroke="currentColor" stroke-width="0.9" transform="rotate(300)"/>
-          <!-- stamens -->
-          <circle r="6"  stroke="currentColor" stroke-width="0.9" fill="none"/>
-          <circle r="2"  fill="currentColor" opacity="0.4"/>
-          <line x1="0" y1="-6" x2="0"  y2="-10" stroke="currentColor" stroke-width="0.6"/>
-          <line x1="4" y1="-4" x2="7"  y2="-8"  stroke="currentColor" stroke-width="0.6"/>
-          <line x1="-4" y1="-4" x2="-7" y2="-8" stroke="currentColor" stroke-width="0.6"/>
-        </g>
-
-        <!-- ─── STEM 2: medium ──────────────────────────── -->
-        <path
-          d="M188 560 C186 518 192 478 184 432 C176 386 183 350 176 308 C169 266 175 236 168 196"
-          stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
-        />
-
-        <!-- HALF-OPEN BUD at top of stem 2 (center 168, 192) -->
-        <g transform="translate(168, 186)">
-          <!-- outer petals cupping inward -->
-          <path d="M0,0 C-16,-10 -22,-34 -12,-54 C-6,-66 6,-66 12,-54 C22,-34 16,-10 0,0"
-            stroke="currentColor" stroke-width="1" fill="none"/>
-          <!-- inner petal hint -->
-          <path d="M0,0 C-8,-12 -12,-30 -5,-50"
-            stroke="currentColor" stroke-width="0.6" fill="none"/>
-          <path d="M0,0 C8,-12 12,-30 5,-50"
-            stroke="currentColor" stroke-width="0.6" fill="none"/>
-          <!-- sepals -->
-          <path d="M-12,-54 C-20,-62 -24,-56 -18,-48"
-            stroke="currentColor" stroke-width="0.8" fill="none" stroke-linecap="round"/>
-          <path d="M12,-54 C20,-62 24,-56 18,-48"
-            stroke="currentColor" stroke-width="0.8" fill="none" stroke-linecap="round"/>
-        </g>
-
-        <!-- small lateral bud off stem 2 -->
-        <path
-          d="M176 308 C170 300 162 292 155 288"
-          stroke="currentColor" stroke-width="1" stroke-linecap="round"
-        />
-        <g transform="translate(152, 284)">
-          <path d="M0,0 C-7,-4 -10,-14 -5,-24 C-2,-30 2,-30 5,-24 C10,-14 7,-4 0,0"
-            stroke="currentColor" stroke-width="0.8" fill="none"/>
-          <path d="M-5,-24 C-9,-28 -12,-26 -9,-21"
-            stroke="currentColor" stroke-width="0.6" fill="none" stroke-linecap="round"/>
-          <path d="M5,-24 C9,-28 12,-26 9,-21"
-            stroke="currentColor" stroke-width="0.6" fill="none" stroke-linecap="round"/>
-        </g>
-
-        <!-- ─── STEM 3: shorter, leftmost visible ──────── -->
-        <path
-          d="M132 560 C130 530 136 505 128 472 C120 439 127 414 120 384 C113 354 119 332 114 308"
-          stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
-        />
-
-        <!-- CLOSED BUD at top of stem 3 (center 114, 302) -->
-        <g transform="translate(114, 296)">
-          <path d="M0,0 C-10,-6 -14,-22 -8,-38 C-4,-48 4,-48 8,-38 C14,-22 10,-6 0,0"
-            stroke="currentColor" stroke-width="1" fill="none"/>
-          <!-- sepals -->
-          <path d="M-8,-38 C-14,-44 -18,-40 -14,-34"
-            stroke="currentColor" stroke-width="0.8" fill="none" stroke-linecap="round"/>
-          <path d="M8,-38 C14,-44 18,-40 14,-34"
-            stroke="currentColor" stroke-width="0.8" fill="none" stroke-linecap="round"/>
-          <path d="M0,-38 C0,-46 1,-46 0,-40"
-            stroke="currentColor" stroke-width="0.6" fill="none" stroke-linecap="round"/>
-        </g>
-
-        <!-- very small bud low on stem 3 -->
-        <path
-          d="M120 384 C114 378 106 372 100 369"
-          stroke="currentColor" stroke-width="0.9" stroke-linecap="round"
-        />
-        <g transform="translate(97, 366)">
-          <path d="M0,0 C-5,-3 -7,-10 -4,-18 C-2,-22 2,-22 4,-18 C7,-10 5,-3 0,0"
-            stroke="currentColor" stroke-width="0.7" fill="none"/>
-        </g>
-
-        <!-- a faint leaf on stem 1 at mid height -->
-        <path
-          d="M238 300 C230 290 218 280 210 282 C218 278 230 268 240 270"
-          stroke="currentColor" stroke-width="0.7" fill="none" opacity="0.6"
-        />
-      </svg>
-
-      <!-- scroll cue -->
-      <div class="hero-hint" aria-hidden="true">
-        <div class="hero-hint-line"></div>
-        <span>scroll</span>
-      </div>
-
-    </section>
-
-    <!-- ─── ABOUT ──────────────────────────────────────── -->
-    <section class="about" data-zone="about" aria-label="About Warqaa">
-
-      <div class="about-portrait" data-reveal>
-        <img
-          id="site-portrait"
-          src="https://i.ibb.co/tTC3Vjf2/Warqaa.jpg"
-          alt="Warqaa Nazar"
-          loading="eager"
-        />
-      </div>
-
-      <div class="about-body">
-        <p class="section-label" data-reveal>about</p>
-
-        <h2 id="site-about-tagline" class="about-tagline" data-editable="settings.about_tagline" data-reveal="delay-1">
-          I want to invite people into my own world.
-        </h2>
-
-        <div id="site-about-text" class="about-text" data-editable="settings.about_text" data-reveal="delay-2">
-          <p>
-            Warqaa Nazar is a writer and designer based between language and space.
-            Her practice moves across essays, architectural thinking, and interior work,
-            each exploring how the places we inhabit carry meaning we did not put there
-            and meaning we urgently need to add.
-          </p>
-          <p>
-            The questions that drive her work are the same across every medium.
-            How does a space say who belongs inside it? What does a room owe the person
-            living in it? How does design become a site for equality or for its opposite?
-          </p>
-          <p>
-            She is interested in ideas that stick. In work that does not just sit on a
-            wall or a page but changes the way someone moves through the world after
-            encountering it.
-          </p>
+      <div class="lockup__name">
+        <!-- placeholder lettering: swap this h1 for the hand drawn calligraphy as an inline svg -->
+        <h1 class="calligraphy" lang="ar" dir="rtl" data-reveal="mask">ورقاء نزار</h1>
+        <p class="latin" data-reveal style="--d:160ms">Warqaa Nizar</p>
+        <div class="roles" data-reveal style="--d:240ms">
+          <span class="label">writer</span>
+          <span class="dotsep" aria-hidden="true"></span>
+          <span class="label">designer</span>
         </div>
-
-        <a
-          id="site-instagram-link"
-          class="about-link"
-          data-editable="settings.instagram"
-          href="https://instagram.com/warqaanazar"
-          target="_blank"
-          rel="noopener noreferrer"
-          data-reveal="delay-3"
-        >@warqaanazar</a>
       </div>
 
-    </section>
+      <div class="lockup__bloom lockup__bloom--right" data-reveal style="--d:300ms">
+        <svg viewBox="0 0 200 480" aria-hidden="true"><use href="#bloom"></use></svg>
+      </div>
+    </div>
 
-    <!-- ─── NAV CARDS ──────────────────────────────────── -->
-    <section class="cards" data-zone="cards" aria-label="Navigate to essays and designs">
+    <div class="hero__statement">
+      <p class="quote">
+        <span class="splitline" style="--d:0ms"><span>Not just a place to read</span></span>
+        <span class="splitline" style="--d:90ms"><span>or look at pretty designs. A place to</span></span>
+        <span class="splitline" style="--d:180ms"><span><em>reimagine</em> the ways we turn the spaces</span></span>
+        <span class="splitline" style="--d:270ms"><span>around us into homes that reflect us.</span></span>
+      </p>
+      <div class="aside" data-reveal style="--d:320ms">
+        <p class="label">socially</p>
+        <p class="label">artistically</p>
+        <p class="label">conceptually</p>
+        <p class="label label--accent">politically</p>
+      </div>
+    </div>
 
-      <a class="card-link" href="essays.html" aria-label="Go to essays">
-        <span class="card-arrow" aria-hidden="true">&#8599;</span>
-        <div class="card-inner">
-          <p class="card-eyebrow">reading</p>
-          <h2 class="card-title">Essays</h2>
-          <p class="card-desc" data-editable="content.home.essays_card_desc">
-            On spaces, politics, and the architecture of belonging.
-          </p>
+    <div class="scrollcue" data-reveal style="--d:420ms">
+      <span class="scrollcue__line" aria-hidden="true"></span>
+      <span class="label">scroll</span>
+    </div>
+  </section>
+
+  <!-- ============ marquee ============ -->
+  <div class="marquee" aria-label="Key ideas">
+    <div class="marquee__track">
+      <span>relationship to heritage</span>
+      <span>messages of equality</span>
+      <span>shaping the future, not only surviving it</span>
+      <span>ideas that stick in peoples heads</span>
+    </div>
+  </div>
+
+  <!-- ============ about ============ -->
+  <section class="section wrap" id="about">
+    <div class="about">
+      <figure class="about__figure" data-reveal="mask">
+        <div class="portrait">
+          <div class="portrait__ground" aria-hidden="true"></div>
+          <div class="pattern pattern--fade" aria-hidden="true"></div>
+          <div class="portrait__arch plate plate--arch" style="--a:170; --m:70">
+            <div class="plate__mark" aria-hidden="true"><svg viewBox="0 0 60 60"><use href="#star8"></use></svg></div>
+          </div>
+          <span class="portrait__tag label">portrait . 2d</span>
         </div>
+      </figure>
+
+      <div class="about__body">
+        <p class="label bracket" data-reveal>about</p>
+        <h2 class="h2" data-reveal style="--d:80ms" >I do not want to be making noise in <em>different places.</em> I want to invite people into my own world.</h2>
+        <p data-reveal style="--d:160ms">Warqaa is an essayist and an architecture student at Al Nahrain University in Baghdad. She writes about heritage, equality, and the quiet politics of rooms, and she designs the spaces those essays argue for.</p>
+        <p data-reveal style="--d:200ms">Her name, ورقاء, means dove. The work follows it: something soft carrying something urgent.</p>
+        <div class="about__meta" data-reveal style="--d:260ms">
+          <div><span class="label">based in</span> <span class="label">Baghdad, Iraq</span></div>
+          <div><span class="label">studying</span> <span class="label">architecture, Al Nahrain University</span></div>
+          <div><span class="label">writing since</span> <span class="label">2022</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ portals ============ -->
+  <section class="section section--tight wrap">
+    <div class="portals">
+      <a class="portal" href="essays.html" data-reveal>
+        <div class="portal__plate">
+          <div class="plate" style="--a:210; --m:55; --tone:var(--olive)">
+            <div class="plate__mark" aria-hidden="true"><svg viewBox="0 0 60 60"><use href="#star8"></use></svg></div>
+          </div>
+          <span class="portal__index label">01</span>
+        </div>
+        <div class="portal__foot">
+          <span class="portal__title">Essays</span>
+          <span class="portal__arrow" aria-hidden="true">&#8599;</span>
+        </div>
+        <p class="portal__note">Design psychology, political philosophy, heritage. Pieces meant to stay in your head after you close the tab.</p>
       </a>
 
-      <a class="card-link" href="designs.html" aria-label="Go to designs">
-        <span class="card-arrow" aria-hidden="true">&#8599;</span>
-        <div class="card-inner">
-          <p class="card-eyebrow">looking</p>
-          <h2 class="card-title">Designs</h2>
-          <p class="card-desc" data-editable="content.home.designs_card_desc">
-            Architectural and interior explorations in form and heritage.
-          </p>
+      <a class="portal" href="designs.html" data-reveal style="--d:120ms">
+        <div class="portal__plate">
+          <div class="plate" style="--a:320; --m:75">
+            <div class="plate__mark" aria-hidden="true"><svg viewBox="0 0 60 60"><use href="#star8"></use></svg></div>
+          </div>
+          <span class="portal__index label">02</span>
         </div>
+        <div class="portal__foot">
+          <span class="portal__title">Designs</span>
+          <span class="portal__arrow" aria-hidden="true">&#8599;</span>
+        </div>
+        <p class="portal__note">Houses, schools, rooms. Each one shown with its drawings and a note on the concept and how it was executed.</p>
       </a>
-
-    </section>
-
-  </main>
-
-  <!-- ─── CONTACT FOOTER ───────────────────────────────── -->
-  <footer class="contact" data-zone="contact" id="contact" aria-label="Contact">
-    <div class="contact-item">
-      <span class="contact-label">email me</span>
-      <a id="site-email" class="contact-value" data-editable="settings.email" href="mailto:warqaa@email.com">warqaa@email.com</a>
     </div>
-    <div class="contact-sep" aria-hidden="true"></div>
-    <div class="contact-item">
-      <span class="contact-label">text me</span>
-      <a id="site-whatsapp" class="contact-value" data-editable="settings.whatsapp" href="https://wa.me/9710000000000" target="_blank" rel="noopener noreferrer">+971 00 000 0000</a>
-    </div>
-  </footer>
+  </section>
 
-  <script src="js/site-settings.js"></script>
-  <script src="js/decorations.js"></script>
-  <script src="js/main.js"></script>
-  <script src="js/editor.js"></script>
+  <!-- ============ contact ============ -->
+  <section class="section wrap" id="contact">
+    <div class="pattern pattern--fade" aria-hidden="true" style="opacity:.05"></div>
+    <div class="contact">
+      <div class="contact__title">
+        <p class="label bracket" data-reveal>get in touch</p>
+        <h2 class="display" data-reveal style="--d:80ms">Come in,<br><em>the door is open</em></h2>
+      </div>
+      <div class="contact__lines">
+        <!-- email and whatsapp go in once she decides; the editor leaves them blank until then -->
+        <p class="tnote" data-reveal style="--d:260ms"><span>follow</span><a href="https://www.instagram.com/warqaathinks/" target="_blank" rel="noopener">@warqaathinks</a></p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot__grid">
+      <div>
+        <svg style="width:36px;color:var(--accent)" viewBox="0 0 200 480" aria-hidden="true"><use href="#bloom"></use></svg>
+        <p class="label" style="margin-top:.8rem">Warqaa Nizar</p>
+        <p class="label">writer, designer</p>
+      </div>
+      <div>
+        <p class="label bracket">pages</p>
+        <ul style="margin-top:.7rem;display:grid;gap:.35rem">
+          <li><a class="navlink" href="index.html">Home</a></li>
+          <li><a class="navlink" href="essays.html">Essays</a></li>
+          <li><a class="navlink" href="designs.html">Designs</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="label bracket">elsewhere</p>
+        <ul style="margin-top:.7rem;display:grid;gap:.35rem">
+          <li><a class="navlink" href="https://www.instagram.com/warqaathinks/" target="_blank" rel="noopener">Instagram</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="label bracket">colophon</p>
+        <p class="label" style="margin-top:.7rem">Set in Cormorant Garamond, EB Garamond, Courier Prime and Aref Ruqaa.</p>
+      </div>
+    </div>
+    <div class="foot__bottom">
+      <span class="label">&copy; <span data-year>2026</span> Warqaa Nizar</span>
+      <span class="label">Baghdad</span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/main.js" defer></script>
 </body>
 </html>
