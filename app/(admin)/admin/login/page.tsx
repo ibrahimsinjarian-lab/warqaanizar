@@ -3,30 +3,34 @@ import { currentAdmin, supabaseServer } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
-async function sendLink(formData: FormData) {
+async function signIn(formData: FormData) {
   'use server';
 
   const email = String(formData.get('email') ?? '').trim().toLowerCase();
-  if (!email) redirect('/admin/login?error=Enter+your+email+address');
+  const password = String(formData.get('password') ?? '');
 
-  const site = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  if (!email || !password) {
+    redirect('/admin/login?error=Enter+your+email+and+password');
+  }
+
   const supabase = await supabaseServer();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: `${site}/auth/callback?next=/admin` }
-  });
+  if (error) {
+    // Supabase says "Invalid login credentials" for both a wrong password and
+    // an address that has no account, which is the right thing to tell people
+    redirect(`/admin/login?error=${encodeURIComponent(error.message)}`);
+  }
 
-  if (error) redirect(`/admin/login?error=${encodeURIComponent(error.message)}`);
-  redirect('/admin/login?sent=1');
+  redirect('/admin');
 }
 
 export default async function LoginPage({
   searchParams
 }: {
-  searchParams: Promise<{ error?: string; sent?: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
-  const { error, sent } = await searchParams;
+  const { error } = await searchParams;
   const { user, isAdmin } = await currentAdmin();
   if (user && isAdmin) redirect('/admin');
 
@@ -35,27 +39,28 @@ export default async function LoginPage({
       <div className="login__card">
         <div>
           <h1 style={{ margin: 0, fontSize: '1.4rem' }}>Sign in to the editor</h1>
-          <p style={{ color: 'var(--mute)', marginTop: '.4rem' }}>
-            We send a link to your email. No password to remember.
-          </p>
+          <p style={{ color: 'var(--mute)', marginTop: '.4rem' }}>Warqaa Nizar</p>
         </div>
 
-        {sent && (
-          <div className="note note--ok">
-            Check your email. The link signs you straight in, and it works once.
-          </div>
-        )}
         {error && <div className="note">{error}</div>}
 
-        <form action={sendLink} className="form">
+        <form action={signIn} className="form">
           <div className="field">
             <label htmlFor="email">Email address</label>
-            <input id="email" name="email" type="email" required autoComplete="email" />
+            <input id="email" name="email" type="email" required autoComplete="username" autoFocus />
+          </div>
+          <div className="field">
+            <label htmlFor="password">Password</label>
+            <input id="password" name="password" type="password" required autoComplete="current-password" />
           </div>
           <button type="submit" className="primary">
-            Send me a link
+            Sign in
           </button>
         </form>
+
+        <p style={{ color: 'var(--mute)', fontSize: '.85rem', margin: 0 }}>
+          Forgotten it? It can be changed from the Supabase dashboard, under Authentication, Users.
+        </p>
       </div>
     </div>
   );
