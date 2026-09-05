@@ -1,18 +1,15 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { supabaseServer } from '@/lib/supabase-server';
-import { deletePiece, saveEssay, translatePiece } from '@/app/(admin)/actions';
+import { saveEssay, startCounterpart, translatePiece, trashPiece } from '@/app/(admin)/actions';
 import Flash from '@/components/admin/Flash';
+import ClearFlags from '@/components/admin/ClearFlags';
 import { LocalePill, StatusPill, TranslationPill } from '@/components/admin/StatusPills';
 import { path } from '@/lib/i18n';
+import { toDateInput } from '@/lib/dates';
 import type { Essay, Locale } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
-
-function dateValue(iso: string | null): string {
-  if (!iso) return '';
-  return new Date(iso).toISOString().slice(0, 10);
-}
 
 export default async function EssayEditor({
   params,
@@ -51,6 +48,9 @@ export default async function EssayEditor({
           </p>
         </div>
         <div className="actions">
+          <Link className="button" href={path(locale, `preview/essays/${essay.id}`)} target="_blank">
+            Preview
+          </Link>
           {essay.status === 'published' && (
             <Link className="button" href={path(locale, `essays/${essay.slug}`)} target="_blank">
               View on the site
@@ -61,17 +61,25 @@ export default async function EssayEditor({
               {siblingRow.locale === 'ar' ? 'Arabic version' : 'English version'}
             </Link>
           ) : (
-            locale === 'ar' && (
-              <form action={translatePiece}>
+            <>
+              {locale === 'ar' && (
+                <form action={translatePiece}>
+                  <input type="hidden" name="kind" value="essays" />
+                  <input type="hidden" name="id" value={essay.id} />
+                  <button type="submit">Translate to English</button>
+                </form>
+              )}
+              <form action={startCounterpart}>
                 <input type="hidden" name="kind" value="essays" />
                 <input type="hidden" name="id" value={essay.id} />
-                <button type="submit">Translate to English</button>
+                <button type="submit">Write the other language myself</button>
               </form>
-            )
+            </>
           )}
         </div>
       </div>
 
+      <ClearFlags />
       <Flash
         saved={flags.saved ? 'Saved. The page rebuilds within a second.' : undefined}
         note={
@@ -90,6 +98,42 @@ export default async function EssayEditor({
         <input type="hidden" name="previousSlug" value={essay.slug} />
         <input type="hidden" name="translation_state" value={essay.translation_state} />
         <input type="hidden" name="edited" value="1" />
+        <input type="hidden" name="currentStatus" value={essay.status} />
+        <input type="hidden" name="previousPublishedAt" value={essay.published_at ?? ''} />
+
+        <div className="publishbar">
+          <span className="publishbar__state">
+            {essay.status === 'published' ? (
+              <>
+                <span className="pill pill--live">live</span>
+                <span style={{ color: 'var(--mute)' }}>Anyone can read this.</span>
+              </>
+            ) : (
+              <>
+                <span className="pill pill--draft">draft</span>
+                <span style={{ color: 'var(--mute)' }}>Only you can see this.</span>
+              </>
+            )}
+          </span>
+          <span className="publishbar__grow" />
+          <button type="submit" name="intent" value="save">
+            Save
+          </button>
+          {essay.status === 'published' ? (
+            <>
+              <button type="submit" name="intent" value="unpublish">
+                Unpublish
+              </button>
+              <button type="submit" name="intent" value="publish" className="primary">
+                Update the page
+              </button>
+            </>
+          ) : (
+            <button type="submit" name="intent" value="publish" className="primary">
+              Publish it
+            </button>
+          )}
+        </div>
 
         <div className="field">
           <label htmlFor="title">Title</label>
@@ -144,27 +188,10 @@ export default async function EssayEditor({
         </div>
 
         <div className="panel">
-          <div className="grid-3">
-            <div className="field">
-              <label htmlFor="status">Status</label>
-              <select id="status" name="status" defaultValue={essay.status}>
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-              </select>
-            </div>
+          <div className="grid-2">
             <div className="field">
               <label htmlFor="published_at">Date</label>
-              <input id="published_at" name="published_at" type="date" defaultValue={dateValue(essay.published_at)} />
-            </div>
-            <div className="field">
-              <label htmlFor="reading_minutes">Minutes to read</label>
-              <input
-                id="reading_minutes"
-                name="reading_minutes"
-                type="text"
-                inputMode="numeric"
-                defaultValue={essay.reading_minutes ?? ''}
-              />
+              <input id="published_at" name="published_at" type="date" defaultValue={toDateInput(essay.published_at)} />
             </div>
           </div>
 
@@ -193,23 +220,24 @@ export default async function EssayEditor({
           </div>
         </div>
 
-        <div className="actions">
-          <button type="submit" className="primary">
-            Save
-          </button>
-          <span style={{ flex: 1 }} />
-        </div>
       </form>
 
-      <form action={deletePiece} style={{ marginTop: '2.5rem' }}>
-        <input type="hidden" name="kind" value="essays" />
-        <input type="hidden" name="id" value={essay.id} />
-        <input type="hidden" name="locale" value={locale} />
-        <input type="hidden" name="slug" value={essay.slug} />
-        <button type="submit" className="danger">
-          Delete this essay
-        </button>
-      </form>
+      <details className="danger-zone">
+        <summary>Delete this essay</summary>
+        <p>
+          It moves to the trash and comes off the site straight away. You can put it back from the
+          trash afterwards.
+        </p>
+        <form action={trashPiece}>
+          <input type="hidden" name="kind" value="essays" />
+          <input type="hidden" name="id" value={essay.id} />
+          <input type="hidden" name="locale" value={locale} />
+          <input type="hidden" name="slug" value={essay.slug} />
+          <button type="submit" className="danger">
+            Yes, move it to the trash
+          </button>
+        </form>
+      </details>
     </>
   );
 }

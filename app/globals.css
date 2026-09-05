@@ -777,3 +777,17 @@ html[lang="ar"] .latin { font-family: var(--serif); letter-spacing: clamp(.16em,
 .bodytext p + p { margin-top: 1.1rem; }
 .bodytext h2, .bodytext h3 { margin: 1.8em 0 .6em; }
 .bodytext--about { max-width: 46ch; }
+
+/* ---------- 20. Draft preview ---------- */
+
+.previewbar {
+  position: sticky; top: 0; z-index: 700;
+  display: flex; align-items: center; justify-content: center;
+  gap: 1rem; flex-wrap: wrap;
+  padding: .55rem 1rem;
+  background: var(--accent); color: var(--bg);
+  font-family: var(--mono); font-size: .72rem;
+  letter-spacing: .1em; text-transform: uppercase;
+}
+.previewbar a { text-decoration: underline; text-underline-offset: 3px; }
+html[lang="ar"] .previewbar { font-family: var(--ar-ui); letter-spacing: 0; text-transform: none; font-size: .85rem; }

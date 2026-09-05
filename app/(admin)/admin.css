@@ -221,3 +221,47 @@ button.danger { color: #a3342a; }
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
   .row { grid-template-columns: 1fr; gap: .4rem; }
 }
+
+/* ---------- the wizard ---------- */
+
+.wizard { max-width: 44rem; }
+
+.wizard__rail { display: flex; gap: .4rem; margin-bottom: 1.4rem; }
+.wizard__tick { height: 3px; flex: 1; border-radius: 2px; background: var(--line); transition: background-color .3s ease; }
+.wizard__tick.is-done { background: var(--ok); }
+.wizard__tick.is-now { background: var(--accent); }
+
+.wizard__title { font-size: clamp(1.5rem, 3vw, 2rem); margin: .4rem 0 .3rem; letter-spacing: -.02em; }
+.wizard__hint { color: var(--mute); margin: 0 0 1.6rem; max-width: 46ch; }
+.wizard__kept { color: var(--ok); }
+.wizard__count { color: var(--mute); font-size: .85rem; margin: .6rem 0 0; }
+
+.wizard__nav {
+  display: flex; gap: .6rem; align-items: center; flex-wrap: wrap;
+  margin-top: 1.8rem; padding-top: 1.2rem; border-top: 1px solid var(--line);
+}
+
+.wizard__review { display: grid; gap: 1rem; }
+.wizard__review p { margin: .2rem 0 0; }
+
+.segmented { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; width: fit-content; }
+.segmented button { border: 0; border-radius: 0; background: var(--panel); padding: .45rem 1rem; }
+.segmented button + button { border-left: 1px solid var(--line); }
+.segmented button[aria-pressed='true'] { background: var(--accent); color: #fff; }
+.segmented button[disabled] { opacity: 1; }
+.segmented button[disabled][aria-pressed='false'] { opacity: .4; }
+
+/* the publish control, which used to be a dropdown nobody found */
+.publishbar {
+  display: flex; align-items: center; gap: .7rem; flex-wrap: wrap;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--panel); padding: .7rem .9rem; margin-bottom: 1.4rem;
+}
+.publishbar__state { display: flex; align-items: center; gap: .5rem; font-size: .9rem; }
+.publishbar__grow { flex: 1; min-width: .5rem; }
+
+/* deleting asks first */
+.danger-zone { margin-top: 2.5rem; border: 1px solid var(--line); border-radius: var(--radius); padding: .8rem 1rem; }
+.danger-zone summary { cursor: pointer; color: var(--mute); font-size: .9rem; }
+.danger-zone[open] summary { color: var(--ink); margin-bottom: .7rem; }
+.danger-zone p { color: var(--mute); font-size: .88rem; margin: 0 0 .8rem; max-width: 52ch; }

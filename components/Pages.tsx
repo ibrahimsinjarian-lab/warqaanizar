@@ -5,6 +5,7 @@ import { Plate, Prose } from './Bits';
 import { Em } from '@/lib/emphasis';
 import { DesignsSection, EssaysSection } from './Lists';
 import {
+  getPieceById,
   getDesign,
   getDesignImages,
   getDesigns,
@@ -344,16 +345,25 @@ export async function EssaysPage({ locale }: { locale: Locale }) {
   );
 }
 
-export async function EssayPage({ locale, slug }: { locale: Locale; slug: string }) {
-  const [essay, settings, all] = await Promise.all([
-    getEssay(locale, slug),
+export async function EssayPage({
+  locale,
+  slug,
+  previewId
+}: {
+  locale: Locale;
+  slug?: string;
+  previewId?: string;
+}) {
+  const [found, settings, all] = await Promise.all([
+    previewId ? getPieceById('essays', previewId) : getEssay(locale, slug ?? ''),
     getSettings(locale),
     getEssays(locale)
   ]);
-  if (!essay) notFound();
+  if (!found) notFound();
+  const essay = found as Essay;
   const ui = settings.ui ?? {};
   const s = (key: StringKey) => t(locale, key, ui);
-  const { previous, next } = neighbours<Essay>(all, slug);
+  const { previous, next } = neighbours<Essay>(all, slug ?? essay.slug);
 
   return (
     <>
@@ -427,17 +437,26 @@ export async function DesignsPage({ locale }: { locale: Locale }) {
   );
 }
 
-export async function DesignPage({ locale, slug }: { locale: Locale; slug: string }) {
-  const [design, settings, all] = await Promise.all([
-    getDesign(locale, slug),
+export async function DesignPage({
+  locale,
+  slug,
+  previewId
+}: {
+  locale: Locale;
+  slug?: string;
+  previewId?: string;
+}) {
+  const [found, settings, all] = await Promise.all([
+    previewId ? getPieceById('designs', previewId) : getDesign(locale, slug ?? ''),
     getSettings(locale),
     getDesigns(locale)
   ]);
-  if (!design) notFound();
+  if (!found) notFound();
+  const design = found as Design;
   const images = await getDesignImages(design.group_id);
   const ui = settings.ui ?? {};
   const s = (key: StringKey) => t(locale, key, ui);
-  const { previous, next } = neighbours<Design>(all, slug);
+  const { previous, next } = neighbours<Design>(all, slug ?? design.slug);
   const spots = ['s1', 's2', 's3', 's4'];
 
   return (

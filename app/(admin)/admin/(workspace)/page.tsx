@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { supabaseServer } from '@/lib/supabase-server';
 import { StatusPill, TranslationPill, LocalePill } from '@/components/admin/StatusPills';
-import { createPiece } from '@/app/(admin)/actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +19,7 @@ async function recent(kind: 'essays' | 'designs'): Promise<Piece[]> {
   const { data } = await supabase
     .from(kind)
     .select('id, locale, title, slug, status, translation_state, updated_at')
+    .is('deleted_at', null)
     .order('updated_at', { ascending: false })
     .limit(6);
   return (data as Piece[]) ?? [];
@@ -65,16 +65,12 @@ export default async function Overview() {
           <p>Everything you have written, and what is waiting for you.</p>
         </div>
         <div className="actions">
-          <form action={createPiece}>
-            <input type="hidden" name="kind" value="essays" />
-            <input type="hidden" name="locale" value="ar" />
-            <button type="submit">New essay</button>
-          </form>
-          <form action={createPiece}>
-            <input type="hidden" name="kind" value="designs" />
-            <input type="hidden" name="locale" value="ar" />
-            <button type="submit">New project</button>
-          </form>
+          <Link className="button button--primary" href="/admin/essays/new">
+            New essay
+          </Link>
+          <Link className="button" href="/admin/designs/new">
+            New project
+          </Link>
         </div>
       </div>
 

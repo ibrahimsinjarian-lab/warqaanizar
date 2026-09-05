@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import EditorLink from './EditorLink';
 import { path, t, otherLocale, type StringKey } from '@/lib/i18n';
 import type { Locale, SiteSettings } from '@/lib/types';
 
@@ -322,6 +323,9 @@ export function Footer({ locale, settings, ui }: { locale: Locale; settings: Sit
                   </a>
                 </li>
               )}
+              <li>
+                <EditorLink />
+              </li>
             </ul>
           </div>
           <div>

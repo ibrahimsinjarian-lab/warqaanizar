@@ -4,11 +4,15 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { supabaseServer } from '@/lib/supabase-server';
 import { slugify, uniqueSlug } from '@/lib/slug';
+import { fromDateInput, readingMinutes } from '@/lib/dates';
 import { translateFields } from '@/lib/translate';
 import { path } from '@/lib/i18n';
 import type { Locale } from '@/lib/types';
 
 type Kind = 'essays' | 'designs';
+
+const NOT_WRITTEN =
+  'Nothing was saved. Your sign in may have expired. Open the editor in another tab, sign in, then try again.';
 
 /** Rebuild only the pages this change can be seen on. */
 function refresh(kind: Kind, locale: Locale, ...slugs: (string | null | undefined)[]) {
@@ -28,28 +32,26 @@ async function freeSlug(kind: Kind, locale: Locale, wanted: string, id: string) 
   return uniqueSlug(slugify(wanted), taken);
 }
 
-/* ------------------------------------------------------------------ create */
-
-export async function createPiece(form: FormData) {
-  const kind = str(form, 'kind') as Kind;
-  const locale = (str(form, 'locale') || 'ar') as Locale;
+/**
+ * ED 06. When a published piece changes address, the old one is remembered
+ * so anyone who shared the link still arrives.
+ */
+async function rememberOldSlug(kind: Kind, locale: Locale, oldSlug: string, newSlug: string, id: string) {
+  if (!oldSlug || oldSlug === newSlug) return;
   const supabase = await supabaseServer();
+  await supabase
+    .from('slug_history')
+    .upsert({ kind, locale, old_slug: oldSlug, piece_id: id }, { onConflict: 'kind,locale,old_slug' });
+  // the new address may itself be a retired one: stop it redirecting to itself
+  await supabase.from('slug_history').delete().eq('kind', kind).eq('locale', locale).eq('old_slug', newSlug);
+}
 
-  const stamp = Date.now().toString(36);
-  const base: Record<string, unknown> = {
-    locale,
-    is_source: locale === 'ar',
-    translation_state: 'original',
-    slug: `untitled-${stamp}`,
-    title: locale === 'ar' ? 'بدون عنوان' : 'Untitled',
-    status: 'draft'
-  };
-  if (kind === 'designs') base.category = 'interior';
-
-  const { data, error } = await supabase.from(kind).insert(base).select('id').single();
-
-  if (error) redirect(`/admin/${kind}?error=${encodeURIComponent(error.message)}`);
-  redirect(`/admin/${kind}/${data!.id}`);
+/** Which button was pressed decides the status, not a hidden dropdown. */
+function statusFrom(form: FormData): 'draft' | 'published' {
+  const intent = str(form, 'intent');
+  if (intent === 'publish') return 'published';
+  if (intent === 'unpublish') return 'draft';
+  return str(form, 'currentStatus') === 'published' ? 'published' : 'draft';
 }
 
 /* -------------------------------------------------------------------- save */
@@ -58,41 +60,41 @@ export async function saveEssay(form: FormData) {
   const id = str(form, 'id');
   const locale = str(form, 'locale') as Locale;
   const previousSlug = str(form, 'previousSlug');
-  const status = str(form, 'status') === 'published' ? 'published' : 'draft';
-  const wanted = str(form, 'slug') || str(form, 'title');
-  const slug = await freeSlug('essays', locale, wanted, id);
-
-  const publishedAt = str(form, 'published_at');
-  const minutes = str(form, 'reading_minutes');
+  const status = statusFrom(form);
+  const body = str(form, 'body');
+  const slug = await freeSlug('essays', locale, str(form, 'slug') || str(form, 'title'), id);
 
   const patch: Record<string, unknown> = {
     title: str(form, 'title'),
     slug,
     excerpt: str(form, 'excerpt') || null,
-    body: str(form, 'body'),
+    body,
     category: str(form, 'category') === 'design' ? 'design' : 'general',
     tags: str(form, 'tags')
       .split(',')
       .map((t) => t.trim())
       .filter(Boolean),
     status,
-    reading_minutes: minutes ? Number(minutes) : null,
+    reading_minutes: readingMinutes(body),
     seo_title: str(form, 'seo_title') || null,
     seo_description: str(form, 'seo_description') || null,
-    published_at: publishedAt ? new Date(publishedAt).toISOString() : status === 'published' ? new Date().toISOString() : null
+    published_at:
+      fromDateInput(str(form, 'published_at'), str(form, 'previousPublishedAt') || null) ??
+      (status === 'published' ? new Date().toISOString() : null)
   };
 
-  // a translation she has edited is no longer a machine translation
   if (str(form, 'translation_state') === 'machine' && str(form, 'edited') === '1') {
     patch.translation_state = 'machine_edited';
     patch.reviewed_at = new Date().toISOString();
   }
 
   const supabase = await supabaseServer();
-  const { error } = await supabase.from('essays').update(patch).eq('id', id);
+  const { data: written, error } = await supabase.from('essays').update(patch).eq('id', id).select('id');
 
   if (error) redirect(`/admin/essays/${id}?error=${encodeURIComponent(error.message)}`);
+  if (!written || written.length === 0) redirect(`/admin/essays/${id}?error=${encodeURIComponent(NOT_WRITTEN)}`);
 
+  await rememberOldSlug('essays', locale, previousSlug, slug, id);
   refresh('essays', locale, slug, previousSlug);
   redirect(`/admin/essays/${id}?saved=1`);
 }
@@ -101,9 +103,8 @@ export async function saveDesign(form: FormData) {
   const id = str(form, 'id');
   const locale = str(form, 'locale') as Locale;
   const previousSlug = str(form, 'previousSlug');
-  const status = str(form, 'status') === 'published' ? 'published' : 'draft';
+  const status = statusFrom(form);
   const slug = await freeSlug('designs', locale, str(form, 'slug') || str(form, 'title'), id);
-  const publishedAt = str(form, 'published_at');
 
   const patch: Record<string, unknown> = {
     title: str(form, 'title'),
@@ -119,7 +120,9 @@ export async function saveDesign(form: FormData) {
     status,
     seo_title: str(form, 'seo_title') || null,
     seo_description: str(form, 'seo_description') || null,
-    published_at: publishedAt ? new Date(publishedAt).toISOString() : status === 'published' ? new Date().toISOString() : null
+    published_at:
+      fromDateInput(str(form, 'published_at'), str(form, 'previousPublishedAt') || null) ??
+      (status === 'published' ? new Date().toISOString() : null)
   };
 
   if (str(form, 'translation_state') === 'machine' && str(form, 'edited') === '1') {
@@ -128,29 +131,100 @@ export async function saveDesign(form: FormData) {
   }
 
   const supabase = await supabaseServer();
-  const { error } = await supabase.from('designs').update(patch).eq('id', id);
+  const { data: written, error } = await supabase.from('designs').update(patch).eq('id', id).select('id');
 
   if (error) redirect(`/admin/designs/${id}?error=${encodeURIComponent(error.message)}`);
+  if (!written || written.length === 0) redirect(`/admin/designs/${id}?error=${encodeURIComponent(NOT_WRITTEN)}`);
 
+  await rememberOldSlug('designs', locale, previousSlug, slug, id);
   refresh('designs', locale, slug, previousSlug);
   redirect(`/admin/designs/${id}?saved=1`);
 }
 
-/* ------------------------------------------------------------------ delete */
+/* ------------------------------------------------------------------- trash */
 
-export async function deletePiece(form: FormData) {
+/** ED 02. Deleting moves a piece to the trash. Nothing is destroyed here. */
+export async function trashPiece(form: FormData) {
   const kind = str(form, 'kind') as Kind;
   const id = str(form, 'id');
   const locale = str(form, 'locale') as Locale;
   const slug = str(form, 'slug');
 
   const supabase = await supabaseServer();
-  const { error } = await supabase.from(kind).delete().eq('id', id);
+  const { data, error } = await supabase
+    .from(kind)
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id)
+    .select('id');
 
   if (error) redirect(`/admin/${kind}/${id}?error=${encodeURIComponent(error.message)}`);
+  if (!data || data.length === 0) redirect(`/admin/${kind}/${id}?error=${encodeURIComponent(NOT_WRITTEN)}`);
 
   refresh(kind, locale, slug);
-  redirect(`/admin/${kind}?deleted=1`);
+  redirect(`/admin/${kind}?trashed=1`);
+}
+
+export async function restorePiece(form: FormData) {
+  const kind = str(form, 'kind') as Kind;
+  const id = str(form, 'id');
+
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from(kind)
+    .update({ deleted_at: null })
+    .eq('id', id)
+    .select('id, locale, slug');
+
+  if (error || !data || data.length === 0) redirect(`/admin/${kind}/trash?error=Could+not+restore+it`);
+
+  refresh(kind, data[0].locale as Locale, data[0].slug as string);
+  redirect(`/admin/${kind}/${id}?restored=1`);
+}
+
+/** Only reachable from the trash, where it says what it will do. */
+export async function purgePiece(form: FormData) {
+  const kind = str(form, 'kind') as Kind;
+  const id = str(form, 'id');
+
+  const supabase = await supabaseServer();
+  await supabase.from(kind).delete().eq('id', id);
+  redirect(`/admin/${kind}/trash?purged=1`);
+}
+
+/* ------------------------------------------------------------ counterpart */
+
+/**
+ * ED 05. An English version she writes herself, rather than having to let
+ * the machine translate first and then overwrite it.
+ */
+export async function startCounterpart(form: FormData) {
+  const kind = str(form, 'kind') as Kind;
+  const id = str(form, 'id');
+  const supabase = await supabaseServer();
+
+  const { data: source } = await supabase.from(kind).select('*').eq('id', id).maybeSingle();
+  if (!source) redirect(`/admin/${kind}?error=Could+not+read+the+piece`);
+
+  const other: Locale = source.locale === 'ar' ? 'en' : 'ar';
+  const slug = await freeSlug(kind, other, String(source.slug), '');
+
+  const row: Record<string, unknown> = {
+    group_id: source.group_id,
+    locale: other,
+    is_source: other === 'ar',
+    translation_state: 'human',
+    slug,
+    title: source.title,
+    status: 'draft',
+    ...(kind === 'essays'
+      ? { body: '', category: source.category, tags: source.tags ?? [] }
+      : { concept: '', execution: '', kind: source.kind, category: source.category })
+  };
+
+  const { data, error } = await supabase.from(kind).insert(row).select('id').single();
+  if (error) redirect(`/admin/${kind}/${id}?error=${encodeURIComponent(error.message)}`);
+
+  redirect(`/admin/${kind}/${data!.id}?fresh=1`);
 }
 
 /* --------------------------------------------------------------- translate */
@@ -167,7 +241,6 @@ export async function translatePiece(form: FormData) {
     redirect(`/admin/${kind}/${id}?error=${encodeURIComponent('Only Arabic pieces are translated automatically.')}`);
   }
 
-  // never overwrite English she has already worked on
   const { data: sibling } = await supabase
     .from(kind)
     .select('id, translation_state, status')
@@ -178,7 +251,7 @@ export async function translatePiece(form: FormData) {
   if (sibling && sibling.translation_state !== 'machine') {
     redirect(
       `/admin/${kind}/${sibling.id}?error=${encodeURIComponent(
-        'This one already has an English version you have edited. Clear it first if you want a fresh translation.'
+        'This one already has an English version you have worked on. Clear it first if you want a fresh translation.'
       )}`
     );
   }
@@ -201,7 +274,7 @@ export async function translatePiece(form: FormData) {
     redirect(`/admin/${kind}/${id}?error=${encodeURIComponent(message)}`);
   }
 
-  const slug = await freeSlug(kind, 'en', translated!.title || source.slug, sibling?.id ?? '');
+  const slug = await freeSlug(kind, 'en', translated!.title || String(source.slug), sibling?.id ?? '');
 
   const row: Record<string, unknown> = {
     group_id: source.group_id,
@@ -220,7 +293,7 @@ export async function translatePiece(form: FormData) {
           body: translated!.body,
           category: source.category,
           tags: source.tags ?? [],
-          reading_minutes: source.reading_minutes
+          reading_minutes: readingMinutes(translated!.body)
         }
       : {
           summary: translated!.summary || null,
@@ -281,9 +354,10 @@ export async function saveSettings(form: FormData) {
   };
 
   const supabase = await supabaseServer();
-  const { error } = await supabase.from('site_settings').update(patch).eq('locale', locale);
+  const { data, error } = await supabase.from('site_settings').update(patch).eq('locale', locale).select('locale');
 
   if (error) redirect(`/admin/settings?locale=${locale}&error=${encodeURIComponent(error.message)}`);
+  if (!data || data.length === 0) redirect(`/admin/settings?locale=${locale}&error=${encodeURIComponent(NOT_WRITTEN)}`);
 
   revalidatePath(path(locale));
   revalidatePath(path(locale, 'essays'));

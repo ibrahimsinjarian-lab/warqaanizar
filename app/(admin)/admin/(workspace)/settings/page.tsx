@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { supabaseServer } from '@/lib/supabase-server';
 import { saveSettings } from '@/app/(admin)/actions';
 import Flash from '@/components/admin/Flash';
+import ClearFlags from '@/components/admin/ClearFlags';
 import type { Locale, SiteSettings } from '@/lib/types';
 
 export const metadata: Metadata = { title: 'Front page' };
@@ -30,6 +31,11 @@ export default async function SettingsPage({
           <h1>Front page</h1>
           <p>Every word on the home page, and the contact details. No code involved.</p>
         </div>
+        <div className="actions">
+          <Link className="button" href={locale === 'ar' ? '/ar' : '/'} target="_blank">
+            Look at the front page
+          </Link>
+        </div>
       </div>
 
       <div className="tabs">
@@ -41,6 +47,7 @@ export default async function SettingsPage({
         </Link>
       </div>
 
+      <ClearFlags />
       <Flash saved={params.saved ? 'Saved. The front page rebuilds within a second.' : undefined} error={params.error} />
 
       <form action={saveSettings} className="form" dir={rtl ? 'rtl' : 'ltr'}>

@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { supabaseServer } from '@/lib/supabase-server';
-import { createPiece } from '@/app/(admin)/actions';
 import Flash from './Flash';
 import { LocalePill, StatusPill, TranslationPill } from './StatusPills';
 
@@ -32,6 +31,7 @@ export default async function PieceList({
   const { data, error } = await supabase
     .from(kind)
     .select('id, group_id, locale, title, slug, status, translation_state, published_at, updated_at')
+    .is('deleted_at', null)
     .order('updated_at', { ascending: false });
 
   const rows = (data as Row[]) ?? [];
@@ -53,18 +53,12 @@ export default async function PieceList({
           <p>{words.blurb}</p>
         </div>
         <div className="actions">
-          <form action={createPiece}>
-            <input type="hidden" name="kind" value={kind} />
-            <input type="hidden" name="locale" value="ar" />
-            <button type="submit" className="primary">
-              New {words.one} in Arabic
-            </button>
-          </form>
-          <form action={createPiece}>
-            <input type="hidden" name="kind" value={kind} />
-            <input type="hidden" name="locale" value="en" />
-            <button type="submit">In English</button>
-          </form>
+          <Link className="button" href={`/admin/${kind}/trash`}>
+            Trash
+          </Link>
+          <Link className="button button--primary" href={`/admin/${kind}/new`}>
+            New {words.one}
+          </Link>
         </div>
       </div>
 
