@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Bloom, Star } from './Chrome';
-import { Empty, InlineMd, Plate, Prose } from './Bits';
-import { DesignGrid, EssayList } from './Lists';
+import { Plate, Prose } from './Bits';
+import { Em } from '@/lib/emphasis';
+import { DesignsSection, EssaysSection } from './Lists';
 import {
   getDesign,
   getDesignImages,
@@ -75,7 +76,7 @@ function NextPrev({
       {previous ? (
         <Link href={path(locale, `${kind}/${previous.slug}`)}>
           <p className="label bracket">{s('previous')}</p>
-          <h3 className="h3">{previous.title}</h3>
+          <h3 className="h3"><Em text={previous.title} /></h3>
         </Link>
       ) : (
         <span />
@@ -83,7 +84,7 @@ function NextPrev({
       {next ? (
         <Link href={path(locale, `${kind}/${next.slug}`)}>
           <p className="label bracket">{s('next')}</p>
-          <h3 className="h3">{next.title}</h3>
+          <h3 className="h3"><Em text={next.title} /></h3>
         </Link>
       ) : (
         <span />
@@ -151,7 +152,7 @@ export async function HomePage({ locale }: { locale: Locale }) {
             <p className="quote">
               {lines.map((line, i) => (
                 <span className="splitline" key={i} style={{ ['--d' as string]: `${i * 90}ms` }}>
-                  <span>{line}</span>
+                  <span><Em text={line} /></span>
                 </span>
               ))}
             </p>
@@ -211,12 +212,12 @@ export async function HomePage({ locale }: { locale: Locale }) {
               </p>
               {settings.about_quote && (
                 <h2 className="h2" data-reveal="" style={{ ['--d' as string]: '80ms' }}>
-                  <InlineMd text={settings.about_quote} />
+                  <Em text={settings.about_quote} />
                 </h2>
               )}
               {settings.about && (
                 <div data-reveal="" style={{ ['--d' as string]: '160ms' }}>
-                  <Prose markdown={settings.about} className="prose about__prose" />
+                  <Prose markdown={settings.about} className="bodytext bodytext--about" />
                 </div>
               )}
               {settings.about_meta.length > 0 && (
@@ -286,7 +287,7 @@ export async function HomePage({ locale }: { locale: Locale }) {
             </p>
             {settings.contact_title && (
               <h2 className="display" data-reveal="" style={{ ['--d' as string]: '80ms' }}>
-                <InlineMd text={settings.contact_title} />
+                <Em text={settings.contact_title} />
               </h2>
             )}
           </div>
@@ -335,37 +336,7 @@ export async function EssaysPage({ locale }: { locale: Locale }) {
 
   return (
     <>
-      <section className="wrap">
-        <div className="pagehead">
-          <div className="pagehead__title">
-            <p className="label bracket" data-reveal="">
-              {s('writing')}
-            </p>
-            <h1 className="display" data-reveal="mask">
-              {s('essays')}
-            </h1>
-          </div>
-          {settings.essays_note && (
-            <div className="pagehead__note">
-              <p className="lede" data-reveal="" style={{ ['--d' as string]: '120ms' }}>
-                {settings.essays_note}
-              </p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <div className="band">
-        <div className="pattern pattern--fade" aria-hidden="true" style={{ opacity: 0.04 }} />
-        <section className="wrap section section--tight">
-          {essays.length === 0 ? (
-            <Empty message={s('nothingYet')} />
-          ) : (
-            <EssayList locale={locale} essays={essays} ui={ui} />
-          )}
-        </section>
-      </div>
-
+      <EssaysSection locale={locale} settings={settings} essays={essays} ui={ui} />
       {settings.essays_crossnav && (
         <CrossNav locale={locale} line={settings.essays_crossnav} to="designs" label={s('designs')} />
       )}
@@ -395,7 +366,7 @@ export async function EssayPage({ locale, slug }: { locale: Locale; slug: string
               <Link href={path(locale, 'essays')}>{s('backToEssays')}</Link>
             </p>
             <h1 className="article__title" style={{ marginTop: '1.2rem' }} data-reveal="mask">
-              {essay.title}
+              <Em text={essay.title} />
             </h1>
             <div className="article__meta" data-reveal="" style={{ ['--d' as string]: '140ms' }}>
               <span className="label">{formatDate(essay.published_at, locale)}</span>
@@ -448,32 +419,7 @@ export async function DesignsPage({ locale }: { locale: Locale }) {
 
   return (
     <>
-      <section className="wrap">
-        <div className="pagehead">
-          <div className="pagehead__title">
-            <p className="label bracket" data-reveal="">
-              {s('builtAndDrawn')}
-            </p>
-            <h1 className="display" data-reveal="mask">
-              {s('designs')}
-            </h1>
-          </div>
-          {settings.designs_note && (
-            <div className="pagehead__note">
-              <p className="lede" data-reveal="" style={{ ['--d' as string]: '120ms' }}>
-                {settings.designs_note}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {designs.length === 0 ? (
-          <Empty message={s('nothingYet')} />
-        ) : (
-          <DesignGrid locale={locale} designs={designs} ui={ui} />
-        )}
-      </section>
-
+      <DesignsSection locale={locale} settings={settings} designs={designs} ui={ui} />
       {settings.designs_crossnav && (
         <CrossNav locale={locale} line={settings.designs_crossnav} to="essays" label={s('essays')} />
       )}
@@ -503,7 +449,7 @@ export async function DesignPage({ locale, slug }: { locale: Locale; slug: strin
               <Link href={path(locale, 'designs')}>{s('backToDesigns')}</Link>
             </p>
             <h1 className="display" style={{ marginTop: '1rem' }} data-reveal="mask">
-              {design.title}
+              <Em text={design.title} />
             </h1>
           </div>
           <div className="pagehead__note">
@@ -557,13 +503,13 @@ export async function DesignPage({ locale, slug }: { locale: Locale; slug: strin
             </p>
           </div>
           <div className="about__body">
-            <Prose markdown={design.concept} />
+            <Prose markdown={design.concept} className="bodytext" />
             {design.execution && (
               <>
                 <p className="label bracket" style={{ marginTop: '2.5rem' }} data-reveal="">
                   {s('execution')}
                 </p>
-                <Prose markdown={design.execution} />
+                <Prose markdown={design.execution} className="bodytext" />
               </>
             )}
           </div>

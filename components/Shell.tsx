@@ -28,7 +28,7 @@ export default async function Shell({ locale, children }: { locale: Locale; chil
         </a>
         <div className="grain" aria-hidden="true" />
         <Sprite />
-        <Topbar locale={locale} ui={settings.ui ?? {}} />
+        <Topbar locale={locale} ui={settings.ui ?? {}} settings={settings} />
         <main id="main">{children}</main>
         <Footer locale={locale} settings={settings} ui={settings.ui ?? {}} />
         <Effects />

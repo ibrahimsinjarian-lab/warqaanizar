@@ -41,6 +41,8 @@ export const STRINGS = {
     writing: 'writing',
     builtAndDrawn: 'built and drawn',
     pages: 'pages',
+    colophon: 'colophon',
+    setIn: 'Set in Cormorant Garamond, EB Garamond, Courier Prime and Aref Ruqaa.',
     elsewhere: 'elsewhere'
   },
   ar: {
@@ -82,6 +84,8 @@ export const STRINGS = {
     writing: 'كتابة',
     builtAndDrawn: 'مرسوم ومبني',
     pages: 'الصفحات',
+    colophon: 'الخطوط',
+    setIn: 'مضبوطة بخطوط أميري وأبي رقعة وكورمورانت غارامون.',
     elsewhere: 'روابط'
   }
 } as const;

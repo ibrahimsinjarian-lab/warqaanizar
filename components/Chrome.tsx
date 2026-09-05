@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { path, t, otherLocale, type StringKey } from '@/lib/i18n';
 import type { Locale, SiteSettings } from '@/lib/types';
@@ -134,13 +135,16 @@ function useTheme() {
 export function Topbar({
   locale,
   ui,
+  settings,
   siblingPath
 }: {
   locale: Locale;
   ui: UI;
+  settings: SiteSettings;
   siblingPath?: string | null;
 }) {
   const { toggle } = useTheme();
+  const pathname = usePathname();
   const [stuck, setStuck] = useState(false);
   const [open, setOpen] = useState(false);
   const s = (key: StringKey) => t(locale, key, ui);
@@ -164,6 +168,9 @@ export function Topbar({
 
   const other = otherLocale(locale);
   const switchTo = siblingPath ?? path(other);
+  const here = (href: string) => (pathname === href ? 'page' : undefined);
+  const inSection = (section: string) =>
+    pathname === path(locale, section) || pathname.startsWith(path(locale, section) + '/') ? 'page' : undefined;
 
   return (
     <>
@@ -173,15 +180,18 @@ export function Topbar({
           Warqaa Nizar
         </Link>
         <div className="topbar__right">
-          <Link className="navlink is-desktop" href={path(locale)}>
+          <Link className="navlink is-desktop" href={path(locale)} aria-current={here(path(locale))}>
             {s('home')}
           </Link>
-          <Link className="navlink is-desktop" href={path(locale, 'essays')}>
+          <Link className="navlink is-desktop" href={path(locale, 'essays')} aria-current={inSection('essays')}>
             {s('essays')}
           </Link>
-          <Link className="navlink is-desktop" href={path(locale, 'designs')}>
+          <Link className="navlink is-desktop" href={path(locale, 'designs')} aria-current={inSection('designs')}>
             {s('designs')}
           </Link>
+          <a className="navlink is-desktop" href={`${path(locale)}#contact`}>
+            {s('contact')}
+          </a>
           <Link className="navlink is-desktop langswitch" href={switchTo} lang={other}>
             {s('switchLang')}
           </Link>
@@ -233,7 +243,19 @@ export function Topbar({
             </li>
           </ul>
           <div className="menu__meta">
-            <Link className="label label--accent langswitch" href={switchTo} lang={other}>
+            {settings.location && <span className="label bracket">{settings.location}</span>}
+            {settings.instagram && (
+              <a
+                className="label label--accent"
+                href={`https://www.instagram.com/${settings.instagram}/`}
+                target="_blank"
+                rel="noopener"
+              >
+                <bdi dir="ltr">@{settings.instagram}</bdi>
+              </a>
+            )}
+            {settings.roles && <span className="label bracket">{settings.roles}</span>}
+            <Link className="label langswitch" href={switchTo} lang={other}>
               {s('switchLang')}
             </Link>
           </div>
@@ -303,13 +325,17 @@ export function Footer({ locale, settings, ui }: { locale: Locale; settings: Sit
             </ul>
           </div>
           <div>
-            <p className="label bracket">{settings.location}</p>
+            <p className="label bracket">{s('colophon')}</p>
+            <p className="label" style={{ marginTop: '.7rem' }}>
+              {s('setIn')}
+            </p>
           </div>
         </div>
         <div className="foot__bottom">
           <span className="label">
             &copy; {new Date().getFullYear()} {settings.display_name}
           </span>
+          {settings.location && <span className="label">{settings.location}</span>}
         </div>
       </div>
     </footer>
