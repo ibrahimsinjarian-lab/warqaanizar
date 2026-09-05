@@ -573,25 +573,25 @@ export async function DesignPage({ locale, slug }: { locale: Locale; slug: strin
           <div className="spec" style={{ marginTop: '3.5rem' }} data-reveal="">
             {design.kind && (
               <div>
-                <span className="label">{s('designs')}</span>
+                <span className="label">{s('specType')}</span>
                 <strong>{design.kind}</strong>
               </div>
             )}
             {design.spec_place && (
               <div>
-                <span className="label">{settings.location}</span>
+                <span className="label">{s('specPlace')}</span>
                 <strong>{design.spec_place}</strong>
               </div>
             )}
             {design.spec_year && (
               <div>
-                <span className="label">year</span>
+                <span className="label">{s('specYear')}</span>
                 <strong>{design.spec_year}</strong>
               </div>
             )}
             {design.spec_status && (
               <div>
-                <span className="label">status</span>
+                <span className="label">{s('specStatus')}</span>
                 <strong>{design.spec_status}</strong>
               </div>
             )}
