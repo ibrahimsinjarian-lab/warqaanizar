@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { DesignPage } from '@/components/Pages';
 import { getDesign, getDesigns } from '@/lib/queries';
+import { decodeSlug } from '@/lib/i18n';
 
 export const revalidate = 3600;
 export const dynamicParams = true;
@@ -11,7 +12,8 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await params;
+  const { slug: raw } = await params;
+  const slug = decodeSlug(raw);
   const item = await getDesign('en', slug);
   if (!item) return {};
   return {
@@ -21,6 +23,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+  const { slug: raw } = await params;
+  const slug = decodeSlug(raw);
   return <DesignPage locale="en" slug={slug} />;
 }

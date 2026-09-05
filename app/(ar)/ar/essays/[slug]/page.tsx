@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { EssayPage } from '@/components/Pages';
 import { getEssay, getEssays } from '@/lib/queries';
+import { decodeSlug } from '@/lib/i18n';
 
 export const revalidate = 3600;
 export const dynamicParams = true;
@@ -11,7 +12,8 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await params;
+  const { slug: raw } = await params;
+  const slug = decodeSlug(raw);
   const item = await getEssay('ar', slug);
   if (!item) return {};
   return {
@@ -21,6 +23,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+  const { slug: raw } = await params;
+  const slug = decodeSlug(raw);
   return <EssayPage locale="ar" slug={slug} />;
 }

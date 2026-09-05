@@ -1,5 +1,6 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 
 /**
@@ -9,6 +10,10 @@ import { useEffect } from 'react';
  * the visitor asks for reduced motion.
  */
 export default function Effects() {
+  // the layout survives client side navigation, so this has to run again
+  // for every page, otherwise the new page never gets observed
+  const pathname = usePathname();
+
   useEffect(() => {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const revealables = document.querySelectorAll<HTMLElement>('[data-reveal], .splitline');
@@ -29,6 +34,21 @@ export default function Effects() {
       );
       revealables.forEach((el) => io?.observe(el));
     }
+
+
+    // Safety net: the reveal is decoration, the words are not. If the
+    // observer never gets to run, because the tab was opened in the
+    // background or the browser throttled it, show everything anyway.
+    const revealNow = () => {
+      revealables.forEach((el) => {
+        if (el.getBoundingClientRect().top < window.innerHeight) el.classList.add('is-in');
+      });
+    };
+    const failsafe = window.setTimeout(revealNow, 2500);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') revealNow();
+    };
+    document.addEventListener('visibilitychange', onVisible);
 
     // clone the ticker so the loop has no seam
     const clones: HTMLElement[] = [];
@@ -79,13 +99,15 @@ export default function Effects() {
     window.addEventListener('resize', onScroll);
 
     return () => {
+      window.clearTimeout(failsafe);
+      document.removeEventListener('visibilitychange', onVisible);
       io?.disconnect();
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
       clones.forEach((clone) => clone.remove());
       document.querySelectorAll<HTMLElement>('.marquee').forEach((el) => delete el.dataset.cloned);
     };
-  }, []);
+  }, [pathname]);
 
   return null;
 }

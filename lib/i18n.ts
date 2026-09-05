@@ -118,3 +118,16 @@ export function formatDate(iso: string | null, locale: Locale): string {
     numberingSystem: 'latn'
   }).format(new Date(iso));
 }
+
+/**
+ * A URL path segment arrives percent encoded. Anything non ASCII in a slug,
+ * such as an Arabic title, has to be decoded before it is matched against
+ * the value stored in the database.
+ */
+export function decodeSlug(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
