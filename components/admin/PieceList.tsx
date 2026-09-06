@@ -30,11 +30,10 @@ export default async function PieceList({
   const supabase = await supabaseServer();
   const { data, error } = await supabase
     .from(kind)
-    .select('id, group_id, locale, title, slug, status, translation_state, published_at, updated_at')
-    .is('deleted_at', null)
+    .select('*')
     .order('updated_at', { ascending: false });
 
-  const rows = (data as Row[]) ?? [];
+  const rows = ((data as (Row & { deleted_at?: string | null })[]) ?? []).filter((r) => !r.deleted_at);
   const words = WORDS[kind];
 
   // the two language versions of one piece sit together

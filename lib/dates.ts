@@ -32,6 +32,8 @@ export function fromDateInput(value: string, previous: string | null): string | 
 
 /** Words a minute, rounded, never zero. */
 export function readingMinutes(body: string): number {
-  const words = (body ?? '').trim().split(/\s+/).filter(Boolean).length;
+  // the editor stores markup now, and tags are not words
+  const text = (body ?? '').replace(/<[^>]*>/g, ' ').replace(/&[a-z]+;/gi, ' ');
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.round(words / 200));
 }

@@ -218,7 +218,7 @@ export async function HomePage({ locale }: { locale: Locale }) {
               )}
               {settings.about && (
                 <div data-reveal="" style={{ ['--d' as string]: '160ms' }}>
-                  <Prose markdown={settings.about} className="bodytext bodytext--about" />
+                  <Prose content={settings.about} format={settings.content_format} className="bodytext bodytext--about" />
                 </div>
               )}
               {settings.about_meta.length > 0 && (
@@ -394,7 +394,7 @@ export async function EssayPage({
           </header>
 
           <article className="readingcard" data-reveal="" style={{ ['--d' as string]: '80ms' }}>
-            <Prose markdown={essay.body} />
+            <Prose content={essay.body} format={essay.content_format} />
             <div className="endmark" aria-hidden="true">
               <span />
               <Star />
@@ -522,13 +522,13 @@ export async function DesignPage({
             </p>
           </div>
           <div className="about__body">
-            <Prose markdown={design.concept} className="bodytext" />
+            <Prose content={design.concept} format={design.content_format} className="bodytext" />
             {design.execution && (
               <>
                 <p className="label bracket" style={{ marginTop: '2.5rem' }} data-reveal="">
                   {s('execution')}
                 </p>
-                <Prose markdown={design.execution} className="bodytext" />
+                <Prose content={design.execution} format={design.content_format} className="bodytext" />
               </>
             )}
           </div>

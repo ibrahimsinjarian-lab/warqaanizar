@@ -7,6 +7,8 @@ import ClearFlags from '@/components/admin/ClearFlags';
 import { LocalePill, StatusPill, TranslationPill } from '@/components/admin/StatusPills';
 import { path } from '@/lib/i18n';
 import { toDateInput } from '@/lib/dates';
+import { toEditorHtml } from '@/lib/render';
+import RichText from '@/components/admin/RichText';
 import type { Design, Locale } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -16,7 +18,7 @@ export default async function DesignEditor({
   searchParams
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ saved?: string; error?: string; translated?: string }>;
+  searchParams: Promise<{ saved?: string; state?: string; error?: string; translated?: string; restored?: string; fresh?: string }>;
 }) {
   const { id } = await params;
   const flags = await searchParams;
@@ -81,13 +83,23 @@ export default async function DesignEditor({
 
       <ClearFlags />
       <Flash
-        saved={flags.saved ? 'Saved. The page rebuilds within a second.' : undefined}
+        saved={
+          flags.saved
+            ? flags.state === 'published'
+              ? `Published. It is on the site now.`
+              : 'Saved as a draft. It is not on the site yet: press Publish it when you are ready.'
+            : flags.restored
+              ? 'Put back.'
+              : undefined
+        }
         note={
           flags.translated
-            ? 'Translated. It is a draft until you have read it and pressed publish.'
-            : design.translation_state === 'machine'
-              ? 'This English version was translated by a machine and has not been read yet. Saving it marks it as read.'
-              : undefined
+            ? 'Translated. Read it through, then press Publish it.'
+            : flags.fresh
+              ? 'An empty version in the other language. Write it, then publish it.'
+              : design.translation_state === 'machine'
+                ? 'A machine wrote this translation and nobody has read it yet. When you are happy with it, press Publish it.'
+                : undefined
         }
         error={flags.error}
       />
@@ -170,25 +182,21 @@ export default async function DesignEditor({
 
         <div className="field">
           <label htmlFor="concept">The concept</label>
-          <textarea
-            id="concept"
+          <RichText
             name="concept"
-            className="body"
-            style={{ minHeight: '14rem' }}
-            defaultValue={design.concept}
+            defaultValue={toEditorHtml(design.concept, design.content_format)}
             dir={rtl ? 'rtl' : 'ltr'}
+            minHeight="18rem"
           />
         </div>
 
         <div className="field">
           <label htmlFor="execution">How it was executed</label>
-          <textarea
-            id="execution"
+          <RichText
             name="execution"
-            className="body"
-            style={{ minHeight: '11rem' }}
-            defaultValue={design.execution}
+            defaultValue={toEditorHtml(design.execution, design.content_format)}
             dir={rtl ? 'rtl' : 'ltr'}
+            minHeight="14rem"
           />
         </div>
 

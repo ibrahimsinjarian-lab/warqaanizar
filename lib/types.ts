@@ -25,6 +25,7 @@ export interface Essay {
   reading_minutes: number | null;
   seo_title: string | null;
   seo_description: string | null;
+  content_format?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -52,6 +53,7 @@ export interface Design {
   published_at: string | null;
   seo_title: string | null;
   seo_description: string | null;
+  content_format?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -97,5 +99,6 @@ export interface SiteSettings {
   essays_crossnav: string | null;
   designs_crossnav: string | null;
   portrait_tag: string | null;
+  content_format?: string | null;
   ui: Record<string, string>;
 }

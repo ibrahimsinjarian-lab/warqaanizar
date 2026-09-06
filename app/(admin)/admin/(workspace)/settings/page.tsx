@@ -4,6 +4,8 @@ import { supabaseServer } from '@/lib/supabase-server';
 import { saveSettings } from '@/app/(admin)/actions';
 import Flash from '@/components/admin/Flash';
 import ClearFlags from '@/components/admin/ClearFlags';
+import RichText from '@/components/admin/RichText';
+import { toEditorHtml } from '@/lib/render';
 import type { Locale, SiteSettings } from '@/lib/types';
 
 export const metadata: Metadata = { title: 'Front page' };
@@ -100,8 +102,12 @@ export default async function SettingsPage({
 
         <div className="field">
           <label htmlFor="about">The paragraphs</label>
-          <textarea id="about" name="about" className="body" style={{ minHeight: '12rem' }} defaultValue={s.about ?? ''} />
-          <small>A blank line starts a new paragraph.</small>
+          <RichText
+            name="about"
+            defaultValue={toEditorHtml(s.about, s.content_format)}
+            dir={rtl ? 'rtl' : 'ltr'}
+            minHeight="12rem"
+          />
         </div>
 
         <div className="grid-2">

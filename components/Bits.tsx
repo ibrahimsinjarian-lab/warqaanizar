@@ -1,21 +1,20 @@
-import { marked } from 'marked';
+import { renderContent } from '@/lib/render';
 import { Star } from './Chrome';
 import { mediaUrl } from '@/lib/queries';
 import type { Media } from '@/lib/types';
 
-marked.setOptions({ gfm: true, breaks: false });
-
-/** A single line that may carry emphasis, such as the large about line. */
-export function InlineMd({ text, className }: { text: string; className?: string }) {
-  const html = marked.parseInline(typeof text === 'string' ? text : '', { async: false }) as string;
-  return <span className={className} dangerouslySetInnerHTML={{ __html: html }} />;
-}
-
-/** Body copy is Markdown. Only admins can write it, so it is rendered as given. */
-export function Prose({ markdown, className }: { markdown: string; className?: string }) {
-  // the column was jsonb before the markdown migration, so guard the type
-  const source = typeof markdown === 'string' ? markdown : '';
-  const html = marked.parse(source, { async: false }) as string;
+/** Body copy, written either as Markdown or in the editor, always sanitised. */
+export function Prose({
+  content,
+  format,
+  className
+}: {
+  content: string | null | undefined;
+  format?: string | null;
+  className?: string;
+}) {
+  const html = renderContent(content, format);
+  if (!html) return null;
   return <div className={className ?? 'prose'} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 

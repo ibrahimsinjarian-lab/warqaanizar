@@ -18,11 +18,10 @@ async function recent(kind: 'essays' | 'designs'): Promise<Piece[]> {
   const supabase = await supabaseServer();
   const { data } = await supabase
     .from(kind)
-    .select('id, locale, title, slug, status, translation_state, updated_at')
-    .is('deleted_at', null)
+    .select('*')
     .order('updated_at', { ascending: false })
-    .limit(6);
-  return (data as Piece[]) ?? [];
+    .limit(12);
+  return (((data as (Piece & { deleted_at?: string | null })[]) ?? []).filter((r) => !r.deleted_at)).slice(0, 6);
 }
 
 function List({ kind, items }: { kind: 'essays' | 'designs'; items: Piece[] }) {

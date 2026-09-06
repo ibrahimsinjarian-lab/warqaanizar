@@ -1,5 +1,6 @@
 import { createBrowserClient, createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { cache } from 'react';
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
@@ -35,8 +36,14 @@ export function supabaseBrowser() {
   return createBrowserClient(url, key, { db: { schema: 'warqaa' } });
 }
 
-/** The signed in person, and whether the allowlist lets them in. */
-export async function currentAdmin() {
+/**
+ * The signed in person, and whether the allowlist lets them in.
+ *
+ * Wrapped in cache() so a layout and the page inside it share one call.
+ * Without it every admin screen paid for two round trips to Supabase
+ * before it could render anything.
+ */
+export const currentAdmin = cache(async function currentAdmin() {
   const supabase = await supabaseServer();
   const {
     data: { user }
@@ -47,4 +54,4 @@ export async function currentAdmin() {
   // the policy on this table is the check: a row comes back only for admins
   const { data } = await supabase.from('admins').select('email, name').limit(1);
   return { user, isAdmin: Boolean(data?.length), name: data?.[0]?.name ?? null };
-}
+});

@@ -7,6 +7,8 @@ import ClearFlags from '@/components/admin/ClearFlags';
 import { LocalePill, StatusPill, TranslationPill } from '@/components/admin/StatusPills';
 import { path } from '@/lib/i18n';
 import { toDateInput } from '@/lib/dates';
+import { toEditorHtml } from '@/lib/render';
+import RichText from '@/components/admin/RichText';
 import type { Essay, Locale } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -16,7 +18,7 @@ export default async function EssayEditor({
   searchParams
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ saved?: string; error?: string; translated?: string }>;
+  searchParams: Promise<{ saved?: string; state?: string; error?: string; translated?: string; restored?: string; fresh?: string }>;
 }) {
   const { id } = await params;
   const flags = await searchParams;
@@ -81,13 +83,23 @@ export default async function EssayEditor({
 
       <ClearFlags />
       <Flash
-        saved={flags.saved ? 'Saved. The page rebuilds within a second.' : undefined}
+        saved={
+          flags.saved
+            ? flags.state === 'published'
+              ? `Published. It is on the site now.`
+              : 'Saved as a draft. It is not on the site yet: press Publish it when you are ready.'
+            : flags.restored
+              ? 'Put back.'
+              : undefined
+        }
         note={
           flags.translated
-            ? 'Translated. It is a draft until you have read it and pressed publish.'
-            : essay.translation_state === 'machine'
-              ? 'This English version was translated by a machine and has not been read yet. Saving it marks it as read.'
-              : undefined
+            ? 'Translated. Read it through, then press Publish it.'
+            : flags.fresh
+              ? 'An empty version in the other language. Write it, then publish it.'
+              : essay.translation_state === 'machine'
+                ? 'A machine wrote this translation and nobody has read it yet. When you are happy with it, press Publish it.'
+                : undefined
         }
         error={flags.error}
       />
@@ -173,18 +185,12 @@ export default async function EssayEditor({
 
         <div className="field">
           <label htmlFor="body">The essay</label>
-          <textarea
-            id="body"
+          <RichText
             name="body"
-            className="body"
-            defaultValue={essay.body}
+            defaultValue={toEditorHtml(essay.body, essay.content_format)}
             dir={rtl ? 'rtl' : 'ltr'}
-            required
+            minHeight="26rem"
           />
-          <small>
-            Markdown: a blank line starts a new paragraph, ## makes a heading, &gt; makes a pulled quote,
-            *word* makes italic.
-          </small>
         </div>
 
         <div className="panel">

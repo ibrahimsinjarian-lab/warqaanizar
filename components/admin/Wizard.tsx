@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import RichText from './RichText';
 import { createDraft, publishDraft, saveDraft } from '@/app/(admin)/wizard-actions';
 import type { Locale } from '@/lib/types';
 
@@ -33,7 +34,7 @@ const STEPS: Record<Kind, Step[]> = {
     },
     {
       title: 'Write it',
-      hint: 'A blank line starts a new paragraph. ## makes a heading, > makes a pulled quote, *word* makes italic.',
+      hint: 'Use the buttons above the box for headings, quotes, lists and alignment.',
       fields: [{ name: 'body', label: 'The essay', type: 'body', required: true }]
     },
     {
@@ -421,10 +422,17 @@ export default function Wizard({ kind }: { kind: Kind }) {
                     onChange={(e) => set(field.name, e.target.value)}
                     autoFocus={field.required}
                   />
+                ) : field.type === 'body' ? (
+                  <RichText
+                    name={field.name}
+                    defaultValue={values[field.name] ?? ''}
+                    dir={locale === 'ar' ? 'rtl' : 'ltr'}
+                    minHeight={field.rows ? `${field.rows}rem` : '20rem'}
+                    onChange={(html) => set(field.name, html)}
+                  />
                 ) : (
                   <textarea
                     id={field.name}
-                    className={field.type === 'body' ? 'body' : undefined}
                     rows={field.rows}
                     dir={locale === 'ar' ? 'rtl' : 'ltr'}
                     value={values[field.name] ?? ''}

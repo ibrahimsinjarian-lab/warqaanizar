@@ -69,6 +69,7 @@ export async function saveEssay(form: FormData) {
     slug,
     excerpt: str(form, 'excerpt') || null,
     body,
+    content_format: 'html',
     category: str(form, 'category') === 'design' ? 'design' : 'general',
     tags: str(form, 'tags')
       .split(',')
@@ -96,7 +97,7 @@ export async function saveEssay(form: FormData) {
 
   await rememberOldSlug('essays', locale, previousSlug, slug, id);
   refresh('essays', locale, slug, previousSlug);
-  redirect(`/admin/essays/${id}?saved=1`);
+  redirect(`/admin/essays/${id}?saved=1&state=${status}`);
 }
 
 export async function saveDesign(form: FormData) {
@@ -110,6 +111,7 @@ export async function saveDesign(form: FormData) {
     title: str(form, 'title'),
     slug,
     summary: str(form, 'summary') || null,
+    content_format: 'html',
     concept: str(form, 'concept'),
     execution: str(form, 'execution'),
     kind: str(form, 'kind') || null,
@@ -138,7 +140,7 @@ export async function saveDesign(form: FormData) {
 
   await rememberOldSlug('designs', locale, previousSlug, slug, id);
   refresh('designs', locale, slug, previousSlug);
-  redirect(`/admin/designs/${id}?saved=1`);
+  redirect(`/admin/designs/${id}?saved=1&state=${status}`);
 }
 
 /* ------------------------------------------------------------------- trash */
@@ -340,6 +342,7 @@ export async function saveSettings(form: FormData) {
     statement_aside: lines('statement_aside'),
     about_quote: str(form, 'about_quote') || null,
     about: str(form, 'about'),
+    content_format: 'html',
     about_meta: meta,
     portrait_tag: str(form, 'portrait_tag') || null,
     essays_note: str(form, 'essays_note') || null,

@@ -68,6 +68,7 @@ export async function saveDraft(
           slug,
           excerpt: values.excerpt || null,
           body: values.body ?? '',
+          content_format: 'html',
           category: values.category === 'design' ? 'design' : 'general',
           tags: list('tags'),
           reading_minutes: readingMinutes(values.body ?? '')
@@ -76,6 +77,7 @@ export async function saveDraft(
           title: values.title ?? '',
           slug,
           summary: values.summary || null,
+          content_format: 'html',
           concept: values.concept ?? '',
           execution: values.execution ?? '',
           kind: values.kind || null,
