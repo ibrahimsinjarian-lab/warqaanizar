@@ -46,9 +46,10 @@ async function rememberOldSlug(kind: Kind, locale: Locale, oldSlug: string, newS
   await supabase.from('slug_history').delete().eq('kind', kind).eq('locale', locale).eq('old_slug', newSlug);
 }
 
-/** Which button was pressed decides the status, not a hidden dropdown. */
-function statusFrom(form: FormData): 'draft' | 'published' {
-  const intent = str(form, 'intent');
+export type Intent = 'save' | 'publish' | 'unpublish';
+
+/** Which button was pressed decides the status. */
+function statusFrom(intent: Intent, form: FormData): 'draft' | 'published' {
   if (intent === 'publish') return 'published';
   if (intent === 'unpublish') return 'draft';
   return str(form, 'currentStatus') === 'published' ? 'published' : 'draft';
@@ -56,11 +57,11 @@ function statusFrom(form: FormData): 'draft' | 'published' {
 
 /* -------------------------------------------------------------------- save */
 
-export async function saveEssay(form: FormData) {
+export async function saveEssay(intent: Intent, form: FormData) {
   const id = str(form, 'id');
   const locale = str(form, 'locale') as Locale;
   const previousSlug = str(form, 'previousSlug');
-  const status = statusFrom(form);
+  const status = statusFrom(intent, form);
   const body = str(form, 'body');
   const slug = await freeSlug('essays', locale, str(form, 'slug') || str(form, 'title'), id);
 
@@ -90,21 +91,21 @@ export async function saveEssay(form: FormData) {
   }
 
   const supabase = await supabaseServer();
-  const { data: written, error } = await supabase.from('essays').update(patch).eq('id', id).select('id');
+  const { data: written, error } = await supabase.from('essays').update(patch).eq('id', id).select('id, status');
 
   if (error) redirect(`/admin/essays/${id}?error=${encodeURIComponent(error.message)}`);
   if (!written || written.length === 0) redirect(`/admin/essays/${id}?error=${encodeURIComponent(NOT_WRITTEN)}`);
 
   await rememberOldSlug('essays', locale, previousSlug, slug, id);
   refresh('essays', locale, slug, previousSlug);
-  redirect(`/admin/essays/${id}?saved=1&state=${status}`);
+  redirect(`/admin/essays/${id}?saved=1&state=${written[0].status}`);
 }
 
-export async function saveDesign(form: FormData) {
+export async function saveDesign(intent: Intent, form: FormData) {
   const id = str(form, 'id');
   const locale = str(form, 'locale') as Locale;
   const previousSlug = str(form, 'previousSlug');
-  const status = statusFrom(form);
+  const status = statusFrom(intent, form);
   const slug = await freeSlug('designs', locale, str(form, 'slug') || str(form, 'title'), id);
 
   const patch: Record<string, unknown> = {
@@ -133,14 +134,14 @@ export async function saveDesign(form: FormData) {
   }
 
   const supabase = await supabaseServer();
-  const { data: written, error } = await supabase.from('designs').update(patch).eq('id', id).select('id');
+  const { data: written, error } = await supabase.from('designs').update(patch).eq('id', id).select('id, status');
 
   if (error) redirect(`/admin/designs/${id}?error=${encodeURIComponent(error.message)}`);
   if (!written || written.length === 0) redirect(`/admin/designs/${id}?error=${encodeURIComponent(NOT_WRITTEN)}`);
 
   await rememberOldSlug('designs', locale, previousSlug, slug, id);
   refresh('designs', locale, slug, previousSlug);
-  redirect(`/admin/designs/${id}?saved=1&state=${status}`);
+  redirect(`/admin/designs/${id}?saved=1&state=${written[0].status}`);
 }
 
 /* ------------------------------------------------------------------- trash */

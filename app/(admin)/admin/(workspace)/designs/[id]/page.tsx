@@ -104,7 +104,7 @@ export default async function DesignEditor({
         error={flags.error}
       />
 
-      <form action={saveDesign} className="form">
+      <form action={saveDesign.bind(null, 'save')} className="form">
         <input type="hidden" name="id" value={design.id} />
         <input type="hidden" name="locale" value={locale} />
         <input type="hidden" name="previousSlug" value={design.slug} />
@@ -128,20 +128,18 @@ export default async function DesignEditor({
             )}
           </span>
           <span className="publishbar__grow" />
-          <button type="submit" name="intent" value="save">
-            Save
-          </button>
+          <button type="submit">Save</button>
           {design.status === 'published' ? (
             <>
-              <button type="submit" name="intent" value="unpublish">
+              <button type="submit" formAction={saveDesign.bind(null, 'unpublish')}>
                 Unpublish
               </button>
-              <button type="submit" name="intent" value="publish" className="primary">
+              <button type="submit" formAction={saveDesign.bind(null, 'publish')} className="primary">
                 Update the page
               </button>
             </>
           ) : (
-            <button type="submit" name="intent" value="publish" className="primary">
+            <button type="submit" formAction={saveDesign.bind(null, 'publish')} className="primary">
               Publish it
             </button>
           )}
