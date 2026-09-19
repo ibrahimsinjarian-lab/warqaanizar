@@ -1,6 +1,6 @@
 import { publicClient } from './supabase';
 import { supabaseServer } from './supabase-server';
-import type { Design, DesignImage, Essay, Locale, SiteSettings } from './types';
+import type { Design, DesignImage, DesignSection, Essay, Locale, SiteSettings } from './types';
 
 /** Bodies are Markdown text. Tolerate the older jsonb columns until 002 has been run. */
 function asText(value: unknown): string {
@@ -122,6 +122,22 @@ export async function getDesignImages(groupId: string): Promise<DesignImage[]> {
     .eq('group_id', groupId)
     .order('sort', { ascending: true });
   return (data as DesignImage[]) ?? [];
+}
+
+/**
+ * A project's sections, in order. Preview reads with the editor's own
+ * session, so a project that is not live yet still shows its text.
+ * Empty before 012 has been run, and the page then falls back to the old fields.
+ */
+export async function getDesignSections(groupId: string, preview = false): Promise<DesignSection[]> {
+  const client = preview ? await supabaseServer() : publicClient();
+  const { data, error } = await client
+    .from('design_sections')
+    .select('*')
+    .eq('group_id', groupId)
+    .order('sort', { ascending: true });
+  if (error) return [];
+  return (data as DesignSection[]) ?? [];
 }
 
 /** The same piece in the other language, when it exists and is published. */

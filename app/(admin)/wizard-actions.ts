@@ -88,13 +88,52 @@ export async function saveDraft(
           spec_status: values.spec_status || null
         };
 
-  const { data, error } = await supabase.from(kind).update(patch).eq('id', id).select('id');
+  const { data, error } = await supabase.from(kind).update(patch).eq('id', id).select('id, group_id');
   if (error) return { ok: false, error: error.message };
   if (!data || data.length === 0) {
     return { ok: false, error: 'Nothing was saved. You may have been signed out. Open the editor in a new tab and sign in again.' };
   }
 
+  if (kind === 'designs') {
+    const failed = await wizardSections(String(data[0].group_id), locale, values.concept ?? '', values.execution ?? '');
+    if (failed) return { ok: false, error: failed };
+  }
+
   return { ok: true, data: { slug } };
+}
+
+/**
+ * The wizard asks for a concept and an execution. Those become the first
+ * two sections, which she can rename, add to and rearrange in the editor.
+ */
+async function wizardSections(groupId: string, locale: Locale, concept: string, execution: string) {
+  const supabase = await supabaseServer();
+  const { data: existing, error } = await supabase
+    .from('design_sections')
+    .select('id')
+    .eq('group_id', groupId)
+    .order('sort')
+    .limit(2);
+  if (error) return /design_sections/.test(error.message) ? null : error.message;
+
+  const ids = (existing ?? []).map((s) => s.id as string);
+  const defaults = [
+    { sort: 0, heading_ar: 'الفكرة', heading_en: 'The concept' },
+    { sort: 1, heading_ar: 'التنفيذ', heading_en: 'How it was executed' }
+  ];
+
+  for (const [i, text] of [concept, execution].entries()) {
+    if (ids[i]) {
+      const { error: e } = await supabase.from('design_sections').update({ [`body_${locale}`]: text }).eq('id', ids[i]);
+      if (e) return e.message;
+    } else if (text.trim() || i === 0) {
+      const { error: e } = await supabase
+        .from('design_sections')
+        .insert({ group_id: groupId, ...defaults[i], [`body_${locale}`]: text });
+      if (e) return e.message;
+    }
+  }
+  return null;
 }
 
 export async function publishDraft(

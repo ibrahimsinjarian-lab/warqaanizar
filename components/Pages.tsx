@@ -2,19 +2,22 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Bloom, Star } from './Chrome';
 import { Plate, Prose } from './Bits';
+import Slideshow from './Slideshow';
+import { formatOf } from '@/lib/render';
 import { Em } from '@/lib/emphasis';
 import { DesignsSection, EssaysSection } from './Lists';
 import {
   getPieceById,
   getDesign,
   getDesignImages,
+  getDesignSections,
   getDesigns,
   getEssay,
   getEssays,
   getSettings
 } from '@/lib/queries';
 import { formatDate, path, t, type StringKey } from '@/lib/i18n';
-import type { Design, Essay, Locale } from '@/lib/types';
+import type { Design, DesignImage, Essay, Locale } from '@/lib/types';
 
 /** The statement rises line by line, so it is split on its sentences. */
 function sentences(text: string): string[] {
@@ -129,7 +132,7 @@ export async function HomePage({ locale }: { locale: Locale }) {
           </div>
 
           <div className="lockup__name">
-            {/* each language leads with the name in its own script, the other sits beneath */}
+            {/* Arabic shows both scripts, English only its own */}
             {locale === 'ar' ? (
               <>
                 {/* the hand drawn calligraphy replaces this heading when she has drawn it */}
@@ -141,14 +144,9 @@ export async function HomePage({ locale }: { locale: Locale }) {
                 </p>
               </>
             ) : (
-              <>
-                <h1 className="calligraphy calligraphy--latin" data-reveal="mask">
-                  {settings.display_name || 'Warqaa Nizar'}
-                </h1>
-                <p className="latin latin--arabic" lang="ar" dir="rtl" data-reveal="" style={{ ['--d' as string]: '160ms' }}>
-                  {arabic.display_name}
-                </p>
-              </>
+              <h1 className="calligraphy calligraphy--latin" data-reveal="mask">
+                {settings.display_name || 'Warqaa Nizar'}
+              </h1>
             )}
             <div className="roles" data-reveal="" style={{ ['--d' as string]: '240ms' }}>
               <span className="label">{s('writer')}</span>
@@ -478,11 +476,61 @@ export async function DesignPage({
   ]);
   if (!found) notFound();
   const design = found as Design;
-  const images = await getDesignImages(design.group_id);
+  const [images, stored] = await Promise.all([
+    getDesignImages(design.group_id),
+    getDesignSections(design.group_id, Boolean(previewId))
+  ]);
   const ui = settings.ui ?? {};
   const s = (key: StringKey) => t(locale, key, ui);
   const { previous, next } = neighbours<Design>(all, slug ?? design.slug);
-  const spots = ['s1', 's2', 's3', 's4'];
+
+  const ar = locale === 'ar';
+  const layout = design.layout ?? 'slideshow';
+  const shown = images.filter((image) => image.media);
+
+  // before 012 there are no sections: the old two fields stand in for them
+  const sections: { id: string; heading: string; body: string }[] = (
+    stored.length
+      ? stored.map((sec) => ({
+          id: sec.id,
+          heading: (ar ? sec.heading_ar : sec.heading_en) ?? '',
+          body: ar ? sec.body_ar : sec.body_en
+        }))
+      : [
+          { id: 'concept', heading: s('concept'), body: design.concept },
+          { id: 'execution', heading: s('execution'), body: design.execution }
+        ]
+  ).filter((sec) => sec.body?.trim() || shown.some((image) => image.section_id === sec.id));
+
+  const alt = (image: DesignImage) => (ar ? image.media?.alt_ar : image.media?.alt_en) ?? '';
+  const caption = (image: DesignImage) => (ar ? image.caption_ar : image.caption_en) ?? '';
+  const inSection = (id: string) => shown.filter((image) => image.section_id === id);
+  const loose = layout === 'sections' ? shown.filter((image) => !sections.some((sec) => sec.id === image.section_id)) : [];
+
+  /** a picture at its own shape, never cropped */
+  const figure = (image: DesignImage, sizes: string) => (
+    <figure className="pfig" key={image.id} data-reveal="">
+      <Plate
+        media={image.media}
+        alt={alt(image)}
+        ratio={image.media?.width && image.media?.height ? `${image.media.width}/${image.media.height}` : undefined}
+        sizes={sizes}
+      />
+      {caption(image) && <figcaption className="label">{caption(image)}</figcaption>}
+    </figure>
+  );
+
+  const sectionText = (sec: (typeof sections)[number], i: number) => (
+    <>
+      {(sec.heading || sections.length > 1) && (
+        <h2 className="psec__title" data-reveal="">
+          <span className="label psec__index">{String(i + 1).padStart(2, '0')}</span>
+          {sec.heading && <span>{sec.heading}</span>}
+        </h2>
+      )}
+      <Prose content={sec.body} format={formatOf(sec.body)} className="bodytext" />
+    </>
+  );
 
   return (
     <>
@@ -514,53 +562,54 @@ export async function DesignPage({
         </div>
       </section>
 
-      {images.length > 0 && (
+      {layout === 'slideshow' ? (
         <section className="section section--tight wrap">
-          <div className="scatter">
-            {images.slice(0, 4).map((image, i) => (
-              <figure
-                key={image.id}
-                className={spots[i]}
-                data-reveal="mask"
-                data-float={String(1 + (i % 3) * 0.4)}
-              >
-                <Plate
-                  media={image.media}
-                  alt={locale === 'ar' ? image.media?.alt_ar : image.media?.alt_en}
-                  angle={(i * 70 + 150) % 360}
-                  ratio={['4/3', '3/4', '1/1', '5/4'][i]}
+          <div className="pbody pbody--slideshow">
+            <div className="pbody__media" data-reveal="mask">
+              {shown.length > 0 ? (
+                <Slideshow
+                  locale={locale}
+                  slides={shown.map((image) => ({ id: image.id, media: image.media!, alt: alt(image), caption: caption(image) }))}
                 />
-                <figcaption className="label">
-                  {String(i + 1).padStart(2, '0')} . {(locale === 'ar' ? image.caption_ar : image.caption_en) ?? ''}
-                </figcaption>
-              </figure>
-            ))}
+              ) : (
+                <Plate angle={150} ratio="4/5" />
+              )}
+            </div>
+            <div className="pbody__text">
+              {sections.map((sec, i) => (
+                <div className="psec" key={sec.id}>
+                  {sectionText(sec, i)}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : (
+        <section className="section section--tight wrap">
+          <div className="pbody pbody--sections">
+            {sections.map((sec, i) => {
+              const own = inSection(sec.id);
+              return (
+                <div className={`prow${own.length ? '' : ' prow--text'}`} key={sec.id}>
+                  <div className="prow__text">{sectionText(sec, i)}</div>
+                  {own.length > 0 && (
+                    <div className={`prow__media${own.length > 2 ? ' prow__media--grid' : ''}`}>
+                      {own.map((image) => figure(image, own.length > 2 ? '(max-width: 900px) 50vw, 25vw' : '(max-width: 900px) 100vw, 50vw'))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {loose.length > 0 && (
+              <div className="pgallery">{loose.map((image) => figure(image, '(max-width: 700px) 100vw, 33vw'))}</div>
+            )}
           </div>
         </section>
       )}
 
-      <section className="section wrap">
-        <div className="about">
-          <div className="about__figure">
-            <p className="label bracket" data-reveal="">
-              {s('concept')}
-            </p>
-          </div>
-          <div className="about__body">
-            <Prose content={design.concept} format={design.content_format} className="bodytext" />
-            {design.execution && (
-              <>
-                <p className="label bracket" style={{ marginTop: '2.5rem' }} data-reveal="">
-                  {s('execution')}
-                </p>
-                <Prose content={design.execution} format={design.content_format} className="bodytext" />
-              </>
-            )}
-          </div>
-        </div>
-
+      <section className="section section--tight wrap">
         {(design.kind || design.spec_place || design.spec_year || design.spec_status) && (
-          <div className="spec" style={{ marginTop: '3.5rem' }} data-reveal="">
+          <div className="spec" data-reveal="">
             {design.kind && (
               <div>
                 <span className="label">{s('specType')}</span>
@@ -588,37 +637,6 @@ export async function DesignPage({
           </div>
         )}
       </section>
-
-      {images.length > 4 && (
-        <section className="section section--tight wrap">
-          <div className="scatter">
-            {/* the fifth runs wide, and any after it scatter in the same rhythm as the first four */}
-            {images.slice(4).map((image, j) => {
-              const wide = j === 0;
-              const spot = (j - 1) % 4;
-              return (
-                <figure
-                  key={image.id}
-                  className={wide ? 's5' : spots[spot]}
-                  data-reveal="mask"
-                  data-float={wide ? '0.9' : String(1 + (spot % 3) * 0.4)}
-                >
-                  <Plate
-                    media={image.media}
-                    alt={locale === 'ar' ? image.media?.alt_ar : image.media?.alt_en}
-                    angle={((j + 4) * 70 + 150) % 360}
-                    ratio={wide ? '16/9' : ['4/3', '3/4', '1/1', '5/4'][spot]}
-                    sizes={wide ? '(max-width: 760px) 100vw, 70vw' : undefined}
-                  />
-                  <figcaption className="label">
-                    {String(j + 5).padStart(2, '0')} . {(locale === 'ar' ? image.caption_ar : image.caption_en) ?? ''}
-                  </figcaption>
-                </figure>
-              );
-            })}
-          </div>
-        </section>
-      )}
 
       <NextPrev locale={locale} kind="designs" previous={previous} next={next} ui={ui} />
     </>

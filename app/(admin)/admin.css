@@ -367,3 +367,57 @@ button.danger { color: #a3342a; }
   .pic__card, .pic__card--single { grid-template-columns: 1fr; }
   .pic__fields { grid-template-columns: 1fr; }
 }
+
+/* ---------- the project builder ---------- */
+
+/* a project is text and pictures side by side: it gets the whole width */
+.admin__main:has(.editor--wide) { max-width: 1600px; }
+
+.builder { display: grid; gap: 1rem; border-top: 1px solid var(--line); padding-top: 1.2rem; }
+.builder__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
+.builder__head .section-title { margin: 0 0 .5rem; }
+.builder__head .pic__hint { margin: 0; }
+.builder__subhead { font-size: .95rem; margin: 0 0 .3rem; }
+
+.builder__body { display: grid; gap: 1.4rem; align-items: start; }
+.builder__body--slideshow { grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem); }
+.builder__slides {
+  position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow: auto;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem;
+}
+.builder__loose { background: var(--panel); border: 1px dashed var(--line); border-radius: var(--radius); padding: 1rem; }
+
+.builder__sections { display: grid; gap: 1rem; }
+.builder__add { justify-self: start; border-style: dashed; }
+
+.sec { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: .8rem; display: grid; gap: .7rem; }
+.sec__bar { display: flex; align-items: center; gap: .4rem; }
+.sec__bar button { padding: .4rem .65rem; }
+.sec__num { font-family: var(--mono); font-size: .8rem; color: var(--mute); min-width: 1.6rem; }
+input.sec__heading { flex: 1; font-weight: 600; font-size: 1.02rem; }
+.sec__grid { display: grid; gap: 1rem; align-items: start; }
+.builder__body--sections .sec__grid { grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem); }
+.sec__pictures { border-inline-start: 1px solid var(--line-2); padding-inline-start: 1rem; }
+
+/* a compact list of pictures, words tucked away until asked for */
+.plist { display: grid; gap: .5rem; }
+.plist__empty { color: var(--mute); font-size: .85rem; margin: 0; }
+.plist__item { border: 1px solid var(--line-2); border-radius: var(--radius); padding: .45rem; background: var(--bg); transition: opacity .2s ease, border-color .2s ease; }
+.plist__item.is-dragging { opacity: .45; border-color: var(--accent); }
+.plist__row { display: grid; grid-template-columns: 5.5rem 1fr; gap: .6rem; align-items: center; }
+.plist__handle { position: relative; cursor: grab; }
+.plist__handle:active { cursor: grabbing; }
+.plist__handle .pic__img { aspect-ratio: 1; }
+.plist__num { position: absolute; top: .2rem; left: .2rem; background: var(--panel); border-radius: 3px; padding: 0 .3rem; font: .7rem var(--mono); }
+.plist__meta { display: grid; gap: .35rem; min-width: 0; }
+.plist__alt { font-size: .8rem; color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.plist__buttons { display: flex; gap: .3rem; flex-wrap: wrap; }
+.plist__buttons button { padding: .2rem .55rem; font-size: .82rem; }
+.plist__details { display: grid; gap: .6rem; margin-top: .6rem; padding-top: .6rem; border-top: 1px solid var(--line-2); }
+.plist .drop { padding: 1rem .8rem; }
+
+@media (max-width: 1000px) {
+  .builder__body--slideshow, .builder__body--sections .sec__grid { grid-template-columns: 1fr; }
+  .builder__slides { position: static; max-height: none; }
+  .sec__pictures { border: 0; padding: 0; }
+}

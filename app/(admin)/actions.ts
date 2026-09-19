@@ -56,33 +56,37 @@ function statusFrom(intent: Intent, form: FormData): 'draft' | 'published' {
 }
 
 /**
- * How many of this piece's pictures have no description in its language.
- * A description is what a screen reader says and what search engines read,
- * so a piece does not go live with pictures that have none.
+ * The words inside each section, in the language of the page being edited,
+ * and the layout, which both languages share.
  */
-async function picturesWithoutWords(kind: Kind, id: string, locale: Locale): Promise<number> {
+async function saveSections(form: FormData, locale: Locale): Promise<string | null> {
+  const groupId = str(form, 'group_id');
+  if (!groupId) return null;
   const supabase = await supabaseServer();
-  const col = locale === 'ar' ? 'alt_ar' : 'alt_en';
-  const blank = (m: unknown) => Boolean(m) && !String((m as Record<string, unknown>)[col] ?? '').trim();
 
-  const { data: row } = await supabase.from(kind).select(`group_id, cover:cover_media_id (${col})`).eq('id', id).maybeSingle();
-  if (!row) return 0;
-  let missing = blank(row.cover) ? 1 : 0;
-
-  if (kind === 'designs') {
-    const { data: plates } = await supabase
-      .from('design_images')
-      .select(`media:media_id (${col})`)
-      .eq('group_id', row.group_id);
-    missing += (plates ?? []).filter((p) => blank(p.media)).length;
+  const layout = str(form, 'layout') === 'sections' ? 'sections' : 'slideshow';
+  if (str(form, 'layout')) {
+    const { error } = await supabase.from('designs').update({ layout }).eq('group_id', groupId);
+    if (error && !/layout/.test(error.message)) return error.message;
   }
-  return missing;
-}
 
-function withoutWordsMessage(count: number, locale: Locale) {
-  const language = locale === 'ar' ? 'Arabic' : 'English';
-  const pictures = count === 1 ? 'One picture has' : `${count} pictures have`;
-  return `Saved, but not published yet. ${pictures} no description in ${language}. Add it under the picture below, then press Publish it again.`;
+  const ids = form.getAll('section_id').map(String).filter(Boolean);
+  const results = await Promise.all(
+    ids.map((sectionId) =>
+      supabase
+        .from('design_sections')
+        .update({
+          [`heading_${locale}`]: str(form, `section_heading_${sectionId}`) || null,
+          [`body_${locale}`]: str(form, `section_body_${sectionId}`)
+        })
+        .eq('id', sectionId)
+        .eq('group_id', groupId)
+        .select('id')
+    )
+  );
+  const failed = results.find((r) => r.error || !r.data?.length);
+  if (failed) return failed.error?.message ?? 'A section was not saved. It may have been removed in another tab.';
+  return null;
 }
 
 /* -------------------------------------------------------------------- save */
@@ -91,12 +95,7 @@ export async function saveEssay(intent: Intent, form: FormData) {
   const id = str(form, 'id');
   const locale = str(form, 'locale') as Locale;
   const previousSlug = str(form, 'previousSlug');
-  // a piece going live for the first time needs words for its pictures
-  const withoutWords =
-    intent === 'publish' && str(form, 'currentStatus') !== 'published'
-      ? await picturesWithoutWords('essays', id, locale)
-      : 0;
-  const status = withoutWords ? statusFrom('save', form) : statusFrom(intent, form);
+  const status = statusFrom(intent, form);
   const body = str(form, 'body');
   const slug = await freeSlug('essays', locale, str(form, 'slug') || str(form, 'title'), id);
 
@@ -133,7 +132,6 @@ export async function saveEssay(intent: Intent, form: FormData) {
 
   await rememberOldSlug('essays', locale, previousSlug, slug, id);
   refresh('essays', locale, slug, previousSlug);
-  if (withoutWords) redirect(`/admin/essays/${id}?error=${encodeURIComponent(withoutWordsMessage(withoutWords, locale))}`);
   redirect(`/admin/essays/${id}?saved=1&state=${written[0].status}`);
 }
 
@@ -141,12 +139,7 @@ export async function saveDesign(intent: Intent, form: FormData) {
   const id = str(form, 'id');
   const locale = str(form, 'locale') as Locale;
   const previousSlug = str(form, 'previousSlug');
-  // a piece going live for the first time needs words for its pictures
-  const withoutWords =
-    intent === 'publish' && str(form, 'currentStatus') !== 'published'
-      ? await picturesWithoutWords('designs', id, locale)
-      : 0;
-  const status = withoutWords ? statusFrom('save', form) : statusFrom(intent, form);
+  const status = statusFrom(intent, form);
   const slug = await freeSlug('designs', locale, str(form, 'slug') || str(form, 'title'), id);
 
   const patch: Record<string, unknown> = {
@@ -154,8 +147,7 @@ export async function saveDesign(intent: Intent, form: FormData) {
     slug,
     summary: str(form, 'summary') || null,
     content_format: 'html',
-    concept: str(form, 'concept'),
-    execution: str(form, 'execution'),
+    // concept and execution now live in design_sections; the old columns are left as they were
     kind: str(form, 'kind') || null,
     category: str(form, 'category') === 'architectural' ? 'architectural' : 'interior',
     spec_place: str(form, 'spec_place') || null,
@@ -180,9 +172,13 @@ export async function saveDesign(intent: Intent, form: FormData) {
   if (error) redirect(`/admin/designs/${id}?error=${encodeURIComponent(error.message)}`);
   if (!written || written.length === 0) redirect(`/admin/designs/${id}?error=${encodeURIComponent(NOT_WRITTEN)}`);
 
+  const sectionError = await saveSections(form, locale);
+  if (sectionError) redirect(`/admin/designs/${id}?error=${encodeURIComponent(sectionError)}`);
+
   await rememberOldSlug('designs', locale, previousSlug, slug, id);
   refresh('designs', locale, slug, previousSlug);
-  if (withoutWords) redirect(`/admin/designs/${id}?error=${encodeURIComponent(withoutWordsMessage(withoutWords, locale))}`);
+  // the layout is shared, so the page in the other language changes too
+  revalidatePath('/', 'layout');
   redirect(`/admin/designs/${id}?saved=1&state=${written[0].status}`);
 }
 
@@ -301,14 +297,25 @@ export async function translatePiece(form: FormData) {
     );
   }
 
+  // every section of a project is translated in the same request as its title
+  const { data: sectionRows } =
+    kind === 'designs'
+      ? await supabase.from('design_sections').select('id, heading_ar, body_ar').eq('group_id', source.group_id).order('sort')
+      : { data: null };
+  const sections = sectionRows ?? [];
+
   const fields: Record<string, string> =
     kind === 'essays'
       ? { title: String(source.title), excerpt: String(source.excerpt ?? ''), body: String(source.body ?? '') }
       : {
           title: String(source.title),
           summary: String(source.summary ?? ''),
-          concept: String(source.concept ?? ''),
-          execution: String(source.execution ?? '')
+          ...Object.fromEntries(
+            sections.flatMap((s, i) => [
+              [`section_${i}_heading`, String(s.heading_ar ?? '')],
+              [`section_${i}_text`, String(s.body_ar ?? '')]
+            ])
+          )
         };
 
   let translated: Record<string, string>;
@@ -342,8 +349,6 @@ export async function translatePiece(form: FormData) {
         }
       : {
           summary: translated!.summary || null,
-          concept: translated!.concept,
-          execution: translated!.execution,
           kind: source.kind,
           category: source.category,
           spec_place: source.spec_place,
@@ -357,6 +362,18 @@ export async function translatePiece(form: FormData) {
     : await supabase.from(kind).insert(row).select('id').single();
 
   if (write.error) redirect(`/admin/${kind}/${id}?error=${encodeURIComponent(write.error.message)}`);
+
+  await Promise.all(
+    sections.map((s, i) =>
+      supabase
+        .from('design_sections')
+        .update({
+          heading_en: translated![`section_${i}_heading`] || null,
+          body_en: translated![`section_${i}_text`] ?? ''
+        })
+        .eq('id', s.id)
+    )
+  );
 
   redirect(`/admin/${kind}/${write.data!.id}?translated=1`);
 }

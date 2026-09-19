@@ -49,6 +49,7 @@ export interface Design {
   spec_place: string | null;
   spec_year: string | null;
   spec_status: string | null;
+  layout?: Layout;
   cover_media_id: string | null;
   cover?: Media | null;
   status: Status;
@@ -58,6 +59,19 @@ export interface Design {
   content_format?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export type Layout = 'slideshow' | 'sections';
+
+/** A block of a project. Both languages live on one row, so pictures line up across them. */
+export interface DesignSection {
+  id: string;
+  group_id: string;
+  sort: number;
+  heading_ar: string | null;
+  heading_en: string | null;
+  body_ar: string;
+  body_en: string;
 }
 
 export interface Media {
@@ -78,6 +92,7 @@ export interface DesignImage {
   caption_ar: string | null;
   caption_en: string | null;
   sort: number;
+  section_id?: string | null;
   media?: Media | null;
 }
 

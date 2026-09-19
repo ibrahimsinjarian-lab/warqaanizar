@@ -46,6 +46,15 @@ export function renderContent(content: string | null | undefined, format?: strin
   return sanitizeHtml(marked.parse(source, { async: false }) as string, ALLOWED);
 }
 
+/**
+ * Sections carried over from the old fields may still be Markdown, and a
+ * section has no format column of its own. The editor always writes HTML,
+ * which always starts with a tag, so the text itself says which it is.
+ */
+export function formatOf(content: string | null | undefined): ContentFormat {
+  return /^\s*</.test(content ?? '') ? 'html' : 'markdown';
+}
+
 /** What the editor should open with: always HTML, converting once if needed. */
 export function toEditorHtml(content: string | null | undefined, format?: string | null): string {
   return renderContent(content, format);

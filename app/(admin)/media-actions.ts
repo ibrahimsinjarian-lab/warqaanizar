@@ -3,7 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { supabaseServer } from '@/lib/supabase-server';
 import type { Uploaded } from '@/lib/cloudinary';
-import type { Media } from '@/lib/types';
+import { describeImage } from '@/lib/describe';
+import type { DesignSection, Media } from '@/lib/types';
 
 /**
  * Pictures are attached straight away, without pressing Save, the way any
@@ -28,10 +29,21 @@ function refreshSite() {
 export async function registerMedia(file: Uploaded): Promise<Result<Media>> {
   if (!/^https:\/\/res\.cloudinary\.com\//.test(file.url)) return { ok: false, error: 'That is not a Cloudinary address.' };
 
+  // written by Gemini now, so she only has to read it; empty if Gemini is unavailable
+  const words = await describeImage(file.url);
+
   const supabase = await supabaseServer();
   const { data, error } = await supabase
     .from('media')
-    .insert({ path: file.url, width: file.width, height: file.height, bytes: file.bytes, mime: file.mime })
+    .insert({
+      path: file.url,
+      width: file.width,
+      height: file.height,
+      bytes: file.bytes,
+      mime: file.mime,
+      alt_ar: words?.alt_ar || null,
+      alt_en: words?.alt_en || null
+    })
     .select('*')
     .single();
 
@@ -89,15 +101,22 @@ export async function setPortrait(mediaId: string | null): Promise<Result> {
 
 /* --------------------------------------------------------- project pictures */
 
+const PLATE_FIELDS = 'id, caption_ar, caption_en, sort, section_id, media:media_id (*)';
+
 export type PlateRow = {
   id: string;
   caption_ar: string | null;
   caption_en: string | null;
   sort: number;
+  section_id: string | null;
   media: Media;
 };
 
-export async function addPlates(groupId: string, mediaIds: string[]): Promise<Result<PlateRow[]>> {
+export async function addPlates(
+  groupId: string,
+  mediaIds: string[],
+  sectionId: string | null = null
+): Promise<Result<PlateRow[]>> {
   const supabase = await supabaseServer();
 
   const { data: last } = await supabase
@@ -110,8 +129,15 @@ export async function addPlates(groupId: string, mediaIds: string[]): Promise<Re
 
   const { data, error } = await supabase
     .from('design_images')
-    .insert(mediaIds.map((media_id, i) => ({ group_id: groupId, media_id, sort: start + i })))
-    .select('id, caption_ar, caption_en, sort, media:media_id (*)');
+    .insert(
+      mediaIds.map((media_id, i) => ({
+        group_id: groupId,
+        media_id,
+        sort: start + i,
+        ...(sectionId ? { section_id: sectionId } : {})
+      }))
+    )
+    .select(PLATE_FIELDS);
 
   if (error) return { ok: false, error: error.message };
   refreshSite();
@@ -137,6 +163,71 @@ export async function orderPlates(ids: string[]): Promise<Result> {
   const supabase = await supabaseServer();
   const results = await Promise.all(
     ids.map((id, sort) => supabase.from('design_images').update({ sort }).eq('id', id).select('id'))
+  );
+
+  const failed = results.find((r) => r.error || !r.data?.length);
+  if (failed) return { ok: false, error: failed.error?.message ?? SIGNED_OUT };
+  refreshSite();
+  return { ok: true, data: null };
+}
+
+/** Moves a picture into a section, or out of every section with null. */
+export async function assignPlate(id: string, sectionId: string | null): Promise<Result> {
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase.from('design_images').update({ section_id: sectionId }).eq('id', id).select('id');
+
+  if (error) return { ok: false, error: error.message };
+  if (!data?.length) return { ok: false, error: SIGNED_OUT };
+  refreshSite();
+  return { ok: true, data: null };
+}
+
+/* ---------------------------------------------------------------- sections */
+
+/**
+ * Adding, removing and reordering sections happen at once, like pictures,
+ * because a picture can only be put in a section that exists. The words
+ * inside a section are saved with the rest of the page, by Save or Publish.
+ */
+
+export async function addSection(groupId: string): Promise<Result<DesignSection>> {
+  const supabase = await supabaseServer();
+  const { data: last } = await supabase
+    .from('design_sections')
+    .select('sort')
+    .eq('group_id', groupId)
+    .order('sort', { ascending: false })
+    .limit(1);
+  const sort = ((last?.[0]?.sort as number | undefined) ?? -1) + 1;
+
+  const { data, error } = await supabase
+    .from('design_sections')
+    .insert({ group_id: groupId, sort })
+    .select('*')
+    .single();
+
+  if (error) {
+    const missing = /design_sections/.test(error.message);
+    return { ok: false, error: missing ? 'Run 012_sections.sql in Supabase first, then try again.' : error.message };
+  }
+  return { ok: true, data: data as DesignSection };
+}
+
+/** Its pictures stay on the project, outside any section, so nothing is lost. */
+export async function removeSection(id: string): Promise<Result> {
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase.from('design_sections').delete().eq('id', id).select('id');
+
+  if (error) return { ok: false, error: error.message };
+  if (!data?.length) return { ok: false, error: SIGNED_OUT };
+  refreshSite();
+  return { ok: true, data: null };
+}
+
+export async function orderSections(ids: string[]): Promise<Result> {
+  const supabase = await supabaseServer();
+  const results = await Promise.all(
+    ids.map((id, sort) => supabase.from('design_sections').update({ sort }).eq('id', id).select('id'))
   );
 
   const failed = results.find((r) => r.error || !r.data?.length);

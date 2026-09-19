@@ -4,12 +4,9 @@ import { useRef, useState } from 'react';
 import { uploadImage, uploadsReady } from '@/lib/cloudinary';
 import { mediaUrl } from '@/lib/media';
 import {
-  addPlates,
   captionPlate,
   describeMedia,
-  orderPlates,
   registerMedia,
-  removePlate,
   setCover,
   setPortrait,
   type PlateRow
@@ -25,7 +22,7 @@ type Target = { type: 'cover'; kind: 'essays' | 'designs'; groupId: string } | {
 
 /* ------------------------------------------------------------ shared bits */
 
-function useUploader() {
+export function useUploader() {
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,7 +34,7 @@ function useUploader() {
       try {
         setProgress(`${prefix}preparing`);
         const up = await uploadImage(file, (f) => setProgress(`${prefix}uploading ${Math.round(f * 100)}%`));
-        setProgress(`${prefix}saving`);
+        setProgress(`${prefix}writing a description`);
         const saved = await registerMedia(up);
         if (!saved.ok) throw new Error(saved.error);
         done.push(saved.data);
@@ -52,7 +49,7 @@ function useUploader() {
   return { upload, progress, error, setError };
 }
 
-function Drop({
+export function Drop({
   multiple,
   busy,
   onFiles,
@@ -103,17 +100,15 @@ function Drop({
 }
 
 /** One text field that saves itself when you leave it. */
-function AutoField({
+export function AutoField({
   label,
   value,
   dir,
-  needed,
   onSave
 }: {
   label: string;
   value: string;
   dir: 'rtl' | 'ltr';
-  needed?: boolean;
   onSave: (value: string) => Promise<{ ok: boolean; error?: string }>;
 }) {
   const [text, setText] = useState(value);
@@ -134,7 +129,6 @@ function AutoField({
     <label className="pic__field">
       <span>
         {label}
-        {needed && !text.trim() && <em className="pic__needed"> needed to publish</em>}
         {state === 'saving' && <em> saving</em>}
         {state === 'saved' && <em className="pic__ok"> saved</em>}
         {state === 'error' && <em className="pic__needed"> not saved, try again</em>}
@@ -144,12 +138,22 @@ function AutoField({
   );
 }
 
-function Descriptions({ media, locale }: { media: Media; locale?: Locale }) {
+export function Descriptions({
+  media,
+  onSaved
+}: {
+  media: Media;
+  locale?: Locale;
+  /** so a list holding this picture never shows, or later saves, an older version */
+  onSaved?: (alt: { alt_ar: string; alt_en: string }) => void;
+}) {
   // both fields are saved together, so each needs to know the other's latest value
   const latest = useRef({ ar: media.alt_ar ?? '', en: media.alt_en ?? '' });
   const save = (which: 'ar' | 'en') => async (value: string) => {
     latest.current[which] = value;
-    return describeMedia(media.id, latest.current.ar, latest.current.en);
+    const result = await describeMedia(media.id, latest.current.ar, latest.current.en);
+    if (result.ok) onSaved?.({ alt_ar: latest.current.ar, alt_en: latest.current.en });
+    return result;
   };
 
   return (
@@ -158,25 +162,31 @@ function Descriptions({ media, locale }: { media: Media; locale?: Locale }) {
         label="Description in Arabic"
         value={media.alt_ar ?? ''}
         dir="rtl"
-        needed={!locale || locale === 'ar'}
         onSave={save('ar')}
       />
       <AutoField
         label="Description in English"
         value={media.alt_en ?? ''}
         dir="ltr"
-        needed={!locale || locale === 'en'}
         onSave={save('en')}
       />
     </>
   );
 }
 
-function Captions({ plate }: { plate: PlateRow }) {
+export function Captions({
+  plate,
+  onSaved
+}: {
+  plate: PlateRow;
+  onSaved?: (caption: { caption_ar: string; caption_en: string }) => void;
+}) {
   const latest = useRef({ ar: plate.caption_ar ?? '', en: plate.caption_en ?? '' });
   const save = (which: 'ar' | 'en') => async (value: string) => {
     latest.current[which] = value;
-    return captionPlate(plate.id, latest.current.ar, latest.current.en);
+    const result = await captionPlate(plate.id, latest.current.ar, latest.current.en);
+    if (result.ok) onSaved?.({ caption_ar: latest.current.ar, caption_en: latest.current.en });
+    return result;
   };
 
   return (
@@ -187,14 +197,14 @@ function Captions({ plate }: { plate: PlateRow }) {
   );
 }
 
-function Thumb({ media, ratio }: { media: Media; ratio?: string }) {
+export function Thumb({ media, ratio }: { media: Media; ratio?: string }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img className="pic__img" src={mediaUrl(media.path, 480) ?? ''} alt="" style={ratio ? { aspectRatio: ratio } : undefined} />
   );
 }
 
-function NotReady() {
+export function NotReady() {
   return (
     <p className="note">
       Picture uploads are not switched on yet. Add <code>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</code> and{' '}
@@ -267,128 +277,6 @@ export function SinglePicture({
           <span className="pic__status">{progress ?? 'Drag a picture here, or'}</span>
         </Drop>
       )}
-
-      {error && <p className="note">{error}</p>}
-    </section>
-  );
-}
-
-/* ------------------------------------------------------- project pictures */
-
-export function ProjectPictures({
-  groupId,
-  initial,
-  locale
-}: {
-  groupId: string;
-  initial: PlateRow[];
-  locale: Locale;
-}) {
-  const [plates, setPlates] = useState<PlateRow[]>(initial);
-  const [dragging, setDragging] = useState<number | null>(null);
-  const { upload, progress, error, setError } = useUploader();
-
-  async function onFiles(files: File[]) {
-    const added = await upload(files);
-    if (!added.length) return;
-    const result = await addPlates(groupId, added.map((m) => m.id));
-    if (result.ok) setPlates((p) => [...p, ...result.data]);
-    else setError(result.error);
-  }
-
-  async function move(from: number, to: number) {
-    if (to < 0 || to >= plates.length || from === to) return;
-    const next = [...plates];
-    const [item] = next.splice(from, 1);
-    next.splice(to, 0, item);
-    const before = plates;
-    setPlates(next);
-    const result = await orderPlates(next.map((p) => p.id));
-    if (!result.ok) {
-      setPlates(before);
-      setError(result.error);
-    }
-  }
-
-  async function remove(id: string) {
-    const result = await removePlate(id);
-    if (result.ok) setPlates((p) => p.filter((x) => x.id !== id));
-    else setError(result.error);
-  }
-
-  if (!uploadsReady()) return <NotReady />;
-
-  return (
-    <section className="pic">
-      <h2 className="section-title">Project pictures</h2>
-      <p className="pic__hint">
-        Shared by the Arabic and English pages. Drag them into the order they should appear: the first four are
-        scattered at the top, the fifth runs wide under the text, and any more follow after it.
-      </p>
-
-      {plates.length > 0 && (
-        <ol className="pic__list">
-          {plates.map((plate, i) => {
-            return (
-              <li
-                key={plate.id}
-                className={`pic__card${dragging === i ? ' is-dragging' : ''}`}
-                onDragOver={(e) => {
-                  if (dragging === null) return;
-                  e.preventDefault();
-                }}
-                onDrop={(e) => {
-                  if (dragging === null) return;
-                  e.preventDefault();
-                  move(dragging, i);
-                  setDragging(null);
-                }}
-              >
-                {/* only the picture is the handle, so selecting text in a field never drags the card */}
-                <div
-                  className="pic__side"
-                  draggable
-                  title="Drag to reorder"
-                  onDragStart={(e) => {
-                    setDragging(i);
-                    e.dataTransfer.effectAllowed = 'move';
-                  }}
-                  onDragEnd={() => setDragging(null)}
-                >
-                  <span className="pic__num">{String(i + 1).padStart(2, '0')}</span>
-                  <Thumb media={plate.media} ratio="1/1" />
-                  <div className="pic__order">
-                    <button type="button" aria-label="Move earlier" disabled={i === 0} onClick={() => move(i, i - 1)}>
-                      &uarr;
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="Move later"
-                      disabled={i === plates.length - 1}
-                      onClick={() => move(i, i + 1)}
-                    >
-                      &darr;
-                    </button>
-                  </div>
-                </div>
-                <div className="pic__fields">
-                  <Descriptions media={plate.media} locale={locale} />
-                  <Captions plate={plate} />
-                  <div className="pic__actions">
-                    <button type="button" className="danger" onClick={() => remove(plate.id)}>
-                      Take it off the project
-                    </button>
-                  </div>
-                </div>
-              </li>
-            );
-          })}
-        </ol>
-      )}
-
-      <Drop multiple busy={Boolean(progress)} onFiles={onFiles}>
-        <span className="pic__status">{progress ?? 'Drag pictures here, as many as you like, or'}</span>
-      </Drop>
 
       {error && <p className="note">{error}</p>}
     </section>

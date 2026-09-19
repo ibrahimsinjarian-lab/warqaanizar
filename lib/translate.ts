@@ -22,7 +22,7 @@ const SYSTEM = `You translate literary Arabic prose into English for a writer's 
 Rules:
 - Translate meaning and voice, not word for word. The English must read as though she wrote it.
 - Keep the register: plain, unshowy, quietly political. Do not add adjectives she did not use.
-- Preserve Markdown exactly: paragraph breaks, headings, blockquotes, emphasis between asterisks.
+- Preserve formatting exactly. If a field is HTML, keep every tag and attribute as it is and translate only the text between tags. If it is Markdown, keep paragraph breaks, headings, blockquotes and emphasis.
 - Never use hyphens or dashes in the prose. Rewrite around them.
 - Return every field you are given, even if the field is short.
 - Do not add a preface, a note, or an explanation. Return the translation only.`;
@@ -112,6 +112,28 @@ export async function translateFields(fields: Record<string, string>): Promise<R
     }
   };
 
+  const text = await askGemini(body);
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error('Gemini returned something that was not the expected shape.');
+  }
+
+  const out: Record<string, string> = {};
+  names.forEach((name) => (out[name] = typeof parsed[name] === 'string' ? (parsed[name] as string) : ''));
+  return out;
+}
+
+/**
+ * One request to whichever flash model this key can use, returning the
+ * text of the answer. Shared by translation and picture descriptions.
+ */
+export async function askGemini(body: unknown): Promise<string> {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) throw new Error('GEMINI_API_KEY is not set on the server.');
+
   const first = resolvedModel ?? process.env.GEMINI_MODEL ?? PREFERRED[0];
   let attempt = await callGemini(first, key, body);
 
@@ -138,15 +160,5 @@ export async function translateFields(fields: Record<string, string>): Promise<R
       .join('') ?? '';
 
   if (!text.trim()) throw new Error('Gemini returned nothing to use.');
-
-  let parsed: Record<string, unknown>;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    throw new Error('Gemini returned something that was not the expected shape.');
-  }
-
-  const out: Record<string, string> = {};
-  names.forEach((name) => (out[name] = typeof parsed[name] === 'string' ? (parsed[name] as string) : ''));
-  return out;
+  return text;
 }

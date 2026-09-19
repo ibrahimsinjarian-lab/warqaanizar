@@ -7,11 +7,11 @@ import ClearFlags from '@/components/admin/ClearFlags';
 import { LocalePill, StatusPill, TranslationPill } from '@/components/admin/StatusPills';
 import { path } from '@/lib/i18n';
 import { toDateInput } from '@/lib/dates';
-import { toEditorHtml } from '@/lib/render';
-import RichText from '@/components/admin/RichText';
-import { ProjectPictures, SinglePicture } from '@/components/admin/Pictures';
+import { formatOf, toEditorHtml } from '@/lib/render';
+import { SinglePicture } from '@/components/admin/Pictures';
+import ProjectBuilder from '@/components/admin/ProjectBuilder';
 import type { PlateRow } from '@/app/(admin)/media-actions';
-import type { Design, Locale } from '@/lib/types';
+import type { Design, DesignSection, Layout, Locale } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,10 +42,24 @@ export default async function DesignEditor({
 
   const { data: plateRows } = await supabase
     .from('design_images')
-    .select('id, caption_ar, caption_en, sort, media:media_id (*)')
+    .select('id, caption_ar, caption_en, sort, section_id, media:media_id (*)')
     .eq('group_id', design.group_id)
     .order('sort', { ascending: true });
   const plates = ((plateRows ?? []) as unknown as PlateRow[]).filter((p) => p.media);
+
+  const { data: sectionRows } = await supabase
+    .from('design_sections')
+    .select('*')
+    .eq('group_id', design.group_id)
+    .order('sort', { ascending: true });
+  const sections = (sectionRows ?? []) as DesignSection[];
+  // sections carried over from the old fields may be Markdown: open them as HTML
+  const bodies = Object.fromEntries(
+    sections.map((s) => {
+      const text = locale === 'ar' ? s.body_ar : s.body_en;
+      return [s.id, toEditorHtml(text, formatOf(text))];
+    })
+  );
 
   return (
     <>
@@ -113,7 +127,7 @@ export default async function DesignEditor({
         error={flags.error}
       />
 
-      <form action={saveDesign.bind(null, 'save')} className="form">
+      <form action={saveDesign.bind(null, 'save')} className="form editor--wide">
         <input type="hidden" name="id" value={design.id} />
         <input type="hidden" name="locale" value={locale} />
         <input type="hidden" name="previousSlug" value={design.slug} />
@@ -187,25 +201,14 @@ export default async function DesignEditor({
           />
         </div>
 
-        <div className="field">
-          <label htmlFor="concept">The concept</label>
-          <RichText
-            name="concept"
-            defaultValue={toEditorHtml(design.concept, design.content_format)}
-            dir={rtl ? 'rtl' : 'ltr'}
-            minHeight="18rem"
-          />
-        </div>
-
-        <div className="field">
-          <label htmlFor="execution">How it was executed</label>
-          <RichText
-            name="execution"
-            defaultValue={toEditorHtml(design.execution, design.content_format)}
-            dir={rtl ? 'rtl' : 'ltr'}
-            minHeight="14rem"
-          />
-        </div>
+        <ProjectBuilder
+          groupId={design.group_id}
+          locale={locale}
+          initialLayout={(design.layout ?? 'slideshow') as Layout}
+          initialSections={sections}
+          initialPlates={plates}
+          bodies={bodies}
+        />
 
         <div className="panel">
           <div className="grid-2">
@@ -275,7 +278,6 @@ export default async function DesignEditor({
         hint="Shown on the projects grid and when it is shared. The Arabic and English versions share it."
       />
 
-      <ProjectPictures groupId={design.group_id} initial={plates} locale={locale} />
 
       <details className="danger-zone">
         <summary>Delete this project</summary>
