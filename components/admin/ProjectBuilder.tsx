@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import RichText from './RichText';
-import { Captions, Descriptions, Drop, NotReady, Thumb, useUploader } from './Pictures';
+import { Captions, Descriptions, Drop, NotReady, Thumb, UploadNotes, useUploader } from './Pictures';
+import type { Reduction } from '@/lib/compress';
 import { uploadsReady } from '@/lib/cloudinary';
 import {
   addPlates,
@@ -14,7 +15,7 @@ import {
   removeSection,
   type PlateRow
 } from '@/app/(admin)/media-actions';
-import type { DesignSection, Layout, Locale } from '@/lib/types';
+import type { DesignSection, Layout, Locale, Media } from '@/lib/types';
 
 /**
  * The body of a project: its sections, its pictures, and how the two are
@@ -128,6 +129,7 @@ export default function ProjectBuilder({ groupId, locale, initialLayout, initial
       sectionId={sectionId}
       sections={layout === 'sections' ? sections.map((s, i) => ({ id: s.id, name: sectionName(s, i) })) : null}
       emptyHint={emptyHint}
+      onProject={new Set(plates.map((p) => p.media.id))}
       onMove={(from, to) => movePicture(list, from, to)}
       onPlace={placePicture}
       onRemove={takeOff}
@@ -252,6 +254,7 @@ function PictureList({
   sectionId,
   sections,
   emptyHint,
+  onProject,
   onMove,
   onPlace,
   onRemove,
@@ -264,6 +267,8 @@ function PictureList({
   sectionId: string | null;
   sections: { id: string; name: string }[] | null;
   emptyHint: string;
+  /** every picture already on this project, in any section */
+  onProject: Set<string>;
   onMove: (from: number, to: number) => void;
   onPlace: (plate: PlateRow, sectionId: string | null) => void;
   onRemove: (plate: PlateRow) => void;
@@ -273,14 +278,25 @@ function PictureList({
 }) {
   const [dragging, setDragging] = useState<number | null>(null);
   const [open, setOpen] = useState<string | null>(null);
-  const { upload, progress, error } = useUploader();
+  const { upload, progress, error, notes, setNotes } = useUploader();
 
-  async function onFiles(files: File[]) {
-    const added = await upload(files);
-    if (!added.length) return;
-    const result = await addPlates(groupId, added.map((m) => m.id), sectionId);
+  /** Adds pictures to the project, skipping any it already has. */
+  async function attach(media: Media[], said: string[] = []) {
+    const seen = new Set(onProject);
+    const fresh = media.filter((m) => !seen.has(m.id) && seen.add(m.id));
+    const skipped = media.length - fresh.length;
+    if (skipped) said.push(`${skipped === 1 ? 'One picture is' : `${skipped} pictures are`} already on this project, so ${skipped === 1 ? 'it was' : 'they were'} not added again.`);
+    setNotes(said);
+    if (!fresh.length) return;
+
+    const result = await addPlates(groupId, fresh.map((m) => m.id), sectionId);
     if (result.ok) onAdded(result.data);
     else onProblem(result.error);
+  }
+
+  async function onFiles(files: File[], reduction: Reduction) {
+    const { media, said } = await upload(files, reduction);
+    await attach(media, said);
   }
 
   return (
@@ -362,10 +378,11 @@ function PictureList({
       ))}
 
       {uploadsReady() && (
-        <Drop multiple busy={Boolean(progress)} onFiles={onFiles}>
+        <Drop multiple busy={Boolean(progress)} onFiles={onFiles} onPick={(media) => attach(media)} exclude={onProject}>
           <span className="pic__status">{progress ?? 'Drag pictures here, or'}</span>
         </Drop>
       )}
+      <UploadNotes notes={notes} />
       {error && <p className="note">{error}</p>}
     </div>
   );

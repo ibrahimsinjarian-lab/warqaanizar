@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { supabaseServer } from '@/lib/supabase-server';
 import type { Uploaded } from '@/lib/cloudinary';
+import { likeness, type Fingerprint } from '@/lib/fingerprint';
 import { describeImage } from '@/lib/describe';
 import type { DesignSection, Media } from '@/lib/types';
 
@@ -26,29 +27,105 @@ function refreshSite() {
 }
 
 /** Record a picture Cloudinary has just accepted. */
-export async function registerMedia(file: Uploaded): Promise<Result<Media>> {
+export async function registerMedia(file: Uploaded, print?: Fingerprint): Promise<Result<Media>> {
   if (!/^https:\/\/res\.cloudinary\.com\//.test(file.url)) return { ok: false, error: 'That is not a Cloudinary address.' };
 
   // written by Gemini now, so she only has to read it; empty if Gemini is unavailable
   const words = await describeImage(file.url);
 
   const supabase = await supabaseServer();
-  const { data, error } = await supabase
+  const row = {
+    path: file.url,
+    width: file.width,
+    height: file.height,
+    bytes: file.bytes,
+    mime: file.mime,
+    alt_ar: words?.alt_ar || null,
+    alt_en: words?.alt_en || null
+  };
+
+  let { data, error } = await supabase
     .from('media')
-    .insert({
-      path: file.url,
-      width: file.width,
-      height: file.height,
-      bytes: file.bytes,
-      mime: file.mime,
-      alt_ar: words?.alt_ar || null,
-      alt_en: words?.alt_en || null
-    })
+    .insert({ ...row, hash: print?.hash ?? null, phash: print?.phash ?? null })
     .select('*')
     .single();
 
+  // the same file finished uploading in another tab a moment ago: use that one
+  if (error?.code === '23505' && print?.hash) {
+    const { data: existing } = await supabase.from('media').select('*').eq('hash', print.hash).maybeSingle();
+    if (existing) return { ok: true, data: existing as Media };
+  }
+  // before 013 there are no fingerprint columns: save without them
+  if (error && /hash/.test(error.message)) {
+    ({ data, error } = await supabase.from('media').insert(row).select('*').single());
+  }
+
   if (error) return { ok: false, error: error.message };
   return { ok: true, data: data as Media };
+}
+
+/* ------------------------------------------------------------ duplicates */
+
+export type Duplicate = { kind: 'same' | 'similar'; media: Media };
+
+/** Copies of one photo score 0.988 or more; different photos 0.37 or less. */
+const SAME_PICTURE = 0.9;
+
+/**
+ * Has this picture been uploaded before? The exact same file is found by its
+ * hash. A resaved, resized or compressed copy is found by how it looks.
+ */
+export async function findDuplicate(print: Fingerprint): Promise<Duplicate | null> {
+  const supabase = await supabaseServer();
+
+  const { data: same, error } = await supabase.from('media').select('*').eq('hash', print.hash).maybeSingle();
+  if (error) return null; // before 013: nothing to compare with
+  if (same) return { kind: 'same', media: same as Media };
+
+  if (!print.phash) return null;
+  // only the fingerprints are compared, so only they are fetched
+  const { data: looks } = await supabase.from('media').select('id, phash').not('phash', 'is', null).limit(5000);
+
+  let best: { id: string; score: number } | null = null;
+  for (const m of (looks ?? []) as { id: string; phash: string }[]) {
+    const score = likeness(print.phash, m.phash);
+    if (score >= SAME_PICTURE && (!best || score > best.score)) best = { id: m.id, score };
+  }
+  if (!best) return null;
+
+  const { data: match } = await supabase.from('media').select('*').eq('id', best.id).maybeSingle();
+  return match ? { kind: 'similar', media: match as Media } : null;
+}
+
+/**
+ * Pictures uploaded before fingerprints existed. The editor rebuilds their
+ * look from Cloudinary's copy, so a later upload of one is still caught.
+ * The exact file hash cannot be rebuilt, since the original is not kept.
+ */
+export async function unprinted(): Promise<{ id: string; path: string }[]> {
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase.from('media').select('id, path').is('phash', null).limit(100);
+  if (error) return [];
+  return (data ?? []) as { id: string; path: string }[];
+}
+
+export async function rememberLooks(id: string, phash: string): Promise<void> {
+  if (!/^[0-9a-f]{512}$/.test(phash)) return;
+  const supabase = await supabaseServer();
+  await supabase.from('media').update({ phash }).eq('id', id).is('phash', null);
+}
+
+/** The picture library, newest first, for choosing a picture already uploaded. */
+export async function recentMedia(offset = 0, limit = 30): Promise<Result<Media[]>> {
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from('media')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, data: (data ?? []) as Media[] };
 }
 
 /** Descriptions are read aloud to people who cannot see the picture, and by search engines. */

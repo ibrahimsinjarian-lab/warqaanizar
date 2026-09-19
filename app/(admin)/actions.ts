@@ -257,9 +257,18 @@ export async function startCounterpart(form: FormData) {
     slug,
     title: source.title,
     status: 'draft',
+    // the cover is shared by both languages
+    cover_media_id: source.cover_media_id ?? null,
     ...(kind === 'essays'
       ? { body: '', category: source.category, tags: source.tags ?? [] }
-      : { concept: '', execution: '', kind: source.kind, category: source.category })
+      : {
+          concept: '',
+          execution: '',
+          kind: source.kind,
+          category: source.category,
+          // the layout is shared: the new version must not start with a different one
+          ...(source.layout ? { layout: source.layout } : {})
+        })
   };
 
   const { data, error } = await supabase.from(kind).insert(row).select('id').single();
@@ -353,8 +362,11 @@ export async function translatePiece(form: FormData) {
           category: source.category,
           spec_place: source.spec_place,
           spec_year: source.spec_year,
-          spec_status: source.spec_status
-        })
+          spec_status: source.spec_status,
+          ...(source.layout ? { layout: source.layout } : {})
+        }),
+    // the cover is shared by both languages
+    cover_media_id: source.cover_media_id ?? null
   };
 
   const write = sibling

@@ -24,6 +24,11 @@ function sentences(text: string): string[] {
   return text.split(/(?<=[.!?؟])\s+/).filter(Boolean);
 }
 
+/** True when text has something to read once its markup is set aside. */
+function hasWords(text: string | null | undefined): boolean {
+  return Boolean((text ?? '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;|&#160;/g, ' ').trim());
+}
+
 /** The piece before and after this one, for the links at the foot of a page. */
 function neighbours<T extends { slug: string }>(items: T[], slug: string) {
   const i = items.findIndex((item) => item.slug === slug);
@@ -500,7 +505,11 @@ export async function DesignPage({
           { id: 'concept', heading: s('concept'), body: design.concept },
           { id: 'execution', heading: s('execution'), body: design.execution }
         ]
-  ).filter((sec) => sec.body?.trim() || shown.some((image) => image.section_id === sec.id));
+  ).filter(
+    // an empty editor still sends <p></p>, so look for actual words; in the
+    // sections layout a block of pictures alone is worth showing too
+    (sec) => hasWords(sec.body) || (layout === 'sections' && shown.some((image) => image.section_id === sec.id))
+  );
 
   const alt = (image: DesignImage) => (ar ? image.media?.alt_ar : image.media?.alt_en) ?? '';
   const caption = (image: DesignImage) => (ar ? image.caption_ar : image.caption_en) ?? '';

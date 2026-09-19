@@ -1,6 +1,6 @@
 import { publicClient } from './supabase';
 import { supabaseServer } from './supabase-server';
-import type { Design, DesignImage, DesignSection, Essay, Locale, SiteSettings } from './types';
+import type { Design, DesignImage, DesignSection, Essay, Locale, Media, SiteSettings } from './types';
 
 /** Bodies are Markdown text. Tolerate the older jsonb columns until 002 has been run. */
 function asText(value: unknown): string {
@@ -102,7 +102,23 @@ export async function getDesigns(locale: Locale): Promise<Design[]> {
     .eq('locale', locale)
     .eq('status', 'published')
     .order('published_at', { ascending: false, nullsFirst: false });
-  return (data as Design[]) ?? [];
+  const designs = (data as Design[]) ?? [];
+
+  // a project with pictures but no cover shows its first picture on the grid
+  const bare = designs.filter((d) => !d.cover).map((d) => d.group_id);
+  if (bare.length) {
+    const { data: firsts } = await publicClient()
+      .from('design_images')
+      .select('group_id, sort, media:media_id (*)')
+      .in('group_id', bare)
+      .order('sort', { ascending: true });
+    const first = new Map<string, Media>();
+    for (const row of (firsts ?? []) as unknown as { group_id: string; media: Media | null }[]) {
+      if (row.media && !first.has(row.group_id)) first.set(row.group_id, row.media);
+    }
+    for (const d of designs) if (!d.cover) d.cover = first.get(d.group_id) ?? null;
+  }
+  return designs;
 }
 
 export async function getDesign(locale: Locale, slug: string, preview = false): Promise<Design | null> {
