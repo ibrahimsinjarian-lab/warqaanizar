@@ -55,13 +55,48 @@ function statusFrom(intent: Intent, form: FormData): 'draft' | 'published' {
   return str(form, 'currentStatus') === 'published' ? 'published' : 'draft';
 }
 
+/**
+ * How many of this piece's pictures have no description in its language.
+ * A description is what a screen reader says and what search engines read,
+ * so a piece does not go live with pictures that have none.
+ */
+async function picturesWithoutWords(kind: Kind, id: string, locale: Locale): Promise<number> {
+  const supabase = await supabaseServer();
+  const col = locale === 'ar' ? 'alt_ar' : 'alt_en';
+  const blank = (m: unknown) => Boolean(m) && !String((m as Record<string, unknown>)[col] ?? '').trim();
+
+  const { data: row } = await supabase.from(kind).select(`group_id, cover:cover_media_id (${col})`).eq('id', id).maybeSingle();
+  if (!row) return 0;
+  let missing = blank(row.cover) ? 1 : 0;
+
+  if (kind === 'designs') {
+    const { data: plates } = await supabase
+      .from('design_images')
+      .select(`media:media_id (${col})`)
+      .eq('group_id', row.group_id);
+    missing += (plates ?? []).filter((p) => blank(p.media)).length;
+  }
+  return missing;
+}
+
+function withoutWordsMessage(count: number, locale: Locale) {
+  const language = locale === 'ar' ? 'Arabic' : 'English';
+  const pictures = count === 1 ? 'One picture has' : `${count} pictures have`;
+  return `Saved, but not published yet. ${pictures} no description in ${language}. Add it under the picture below, then press Publish it again.`;
+}
+
 /* -------------------------------------------------------------------- save */
 
 export async function saveEssay(intent: Intent, form: FormData) {
   const id = str(form, 'id');
   const locale = str(form, 'locale') as Locale;
   const previousSlug = str(form, 'previousSlug');
-  const status = statusFrom(intent, form);
+  // a piece going live for the first time needs words for its pictures
+  const withoutWords =
+    intent === 'publish' && str(form, 'currentStatus') !== 'published'
+      ? await picturesWithoutWords('essays', id, locale)
+      : 0;
+  const status = withoutWords ? statusFrom('save', form) : statusFrom(intent, form);
   const body = str(form, 'body');
   const slug = await freeSlug('essays', locale, str(form, 'slug') || str(form, 'title'), id);
 
@@ -98,6 +133,7 @@ export async function saveEssay(intent: Intent, form: FormData) {
 
   await rememberOldSlug('essays', locale, previousSlug, slug, id);
   refresh('essays', locale, slug, previousSlug);
+  if (withoutWords) redirect(`/admin/essays/${id}?error=${encodeURIComponent(withoutWordsMessage(withoutWords, locale))}`);
   redirect(`/admin/essays/${id}?saved=1&state=${written[0].status}`);
 }
 
@@ -105,7 +141,12 @@ export async function saveDesign(intent: Intent, form: FormData) {
   const id = str(form, 'id');
   const locale = str(form, 'locale') as Locale;
   const previousSlug = str(form, 'previousSlug');
-  const status = statusFrom(intent, form);
+  // a piece going live for the first time needs words for its pictures
+  const withoutWords =
+    intent === 'publish' && str(form, 'currentStatus') !== 'published'
+      ? await picturesWithoutWords('designs', id, locale)
+      : 0;
+  const status = withoutWords ? statusFrom('save', form) : statusFrom(intent, form);
   const slug = await freeSlug('designs', locale, str(form, 'slug') || str(form, 'title'), id);
 
   const patch: Record<string, unknown> = {
@@ -141,6 +182,7 @@ export async function saveDesign(intent: Intent, form: FormData) {
 
   await rememberOldSlug('designs', locale, previousSlug, slug, id);
   refresh('designs', locale, slug, previousSlug);
+  if (withoutWords) redirect(`/admin/designs/${id}?error=${encodeURIComponent(withoutWordsMessage(withoutWords, locale))}`);
   redirect(`/admin/designs/${id}?saved=1&state=${written[0].status}`);
 }
 

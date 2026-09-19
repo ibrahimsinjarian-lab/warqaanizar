@@ -20,6 +20,7 @@ export interface Essay {
   category: 'general' | 'design';
   tags: string[];
   cover_media_id: string | null;
+  cover?: Media | null;
   status: Status;
   published_at: string | null;
   reading_minutes: number | null;
@@ -49,6 +50,7 @@ export interface Design {
   spec_year: string | null;
   spec_status: string | null;
   cover_media_id: string | null;
+  cover?: Media | null;
   status: Status;
   published_at: string | null;
   seo_title: string | null;
@@ -99,6 +101,8 @@ export interface SiteSettings {
   essays_crossnav: string | null;
   designs_crossnav: string | null;
   portrait_tag: string | null;
+  portrait_media_id?: string | null;
+  portrait?: Media | null;
   content_format?: string | null;
   ui: Record<string, string>;
 }

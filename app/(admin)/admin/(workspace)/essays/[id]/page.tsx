@@ -9,6 +9,7 @@ import { path } from '@/lib/i18n';
 import { toDateInput } from '@/lib/dates';
 import { toEditorHtml } from '@/lib/render';
 import RichText from '@/components/admin/RichText';
+import { SinglePicture } from '@/components/admin/Pictures';
 import type { Essay, Locale } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -24,7 +25,7 @@ export default async function EssayEditor({
   const flags = await searchParams;
 
   const supabase = await supabaseServer();
-  const { data } = await supabase.from('essays').select('*').eq('id', id).maybeSingle();
+  const { data } = await supabase.from('essays').select('*, cover:cover_media_id (*)').eq('id', id).maybeSingle();
   if (!data) notFound();
 
   const essay = data as Essay;
@@ -225,6 +226,14 @@ export default async function EssayEditor({
         </div>
 
       </form>
+
+      <SinglePicture
+        target={{ type: 'cover', kind: 'essays', groupId: essay.group_id }}
+        initial={essay.cover ?? null}
+        locale={locale}
+        title="Cover picture"
+        hint="Optional. Shown wide at the top of the essay and when it is shared. The Arabic and English versions share it."
+      />
 
       <details className="danger-zone">
         <summary>Delete this essay</summary>

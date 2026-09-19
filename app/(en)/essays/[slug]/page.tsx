@@ -3,6 +3,7 @@ import { permanentRedirect } from 'next/navigation';
 import { EssayPage } from '@/components/Pages';
 import { getEssay, getEssays, findRetiredSlug, getCounterpartSlug } from '@/lib/queries';
 import { decodeSlug, path } from '@/lib/i18n';
+import { shareImage } from '@/lib/media';
 
 export const revalidate = 3600;
 export const dynamicParams = true;
@@ -33,7 +34,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
             'x-default': path('en', `essays/${slug}`)
           }
         : { 'en': here }
-    }
+    },
+    ...shareImage(item.cover, 'en')
   };
 }
 

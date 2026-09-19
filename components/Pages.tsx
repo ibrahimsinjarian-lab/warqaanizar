@@ -129,13 +129,27 @@ export async function HomePage({ locale }: { locale: Locale }) {
           </div>
 
           <div className="lockup__name">
-            {/* the hand drawn calligraphy replaces this heading when she has drawn it */}
-            <h1 className="calligraphy" lang="ar" dir="rtl" data-reveal="mask">
-              {arabic.display_name}
-            </h1>
-            <p className="latin" data-reveal="" style={{ ['--d' as string]: '160ms' }}>
-              Warqaa Nizar
-            </p>
+            {/* each language leads with the name in its own script, the other sits beneath */}
+            {locale === 'ar' ? (
+              <>
+                {/* the hand drawn calligraphy replaces this heading when she has drawn it */}
+                <h1 className="calligraphy" lang="ar" dir="rtl" data-reveal="mask">
+                  {arabic.display_name}
+                </h1>
+                <p className="latin" lang="en" dir="ltr" data-reveal="" style={{ ['--d' as string]: '160ms' }}>
+                  Warqaa Nizar
+                </p>
+              </>
+            ) : (
+              <>
+                <h1 className="calligraphy calligraphy--latin" data-reveal="mask">
+                  {settings.display_name || 'Warqaa Nizar'}
+                </h1>
+                <p className="latin latin--arabic" lang="ar" dir="rtl" data-reveal="" style={{ ['--d' as string]: '160ms' }}>
+                  {arabic.display_name}
+                </p>
+              </>
+            )}
             <div className="roles" data-reveal="" style={{ ['--d' as string]: '240ms' }}>
               <span className="label">{s('writer')}</span>
               <span className="dotsep" aria-hidden="true" />
@@ -195,14 +209,14 @@ export async function HomePage({ locale }: { locale: Locale }) {
               <div className="portrait">
                 <div className="portrait__ground" aria-hidden="true" />
                 <div className="pattern pattern--fade" aria-hidden="true" />
-                <div
+                <Plate
                   className="portrait__arch plate plate--arch"
-                  style={{ ['--a' as string]: 170, ['--m' as string]: 70 }}
-                >
-                  <div className="plate__mark" aria-hidden="true">
-                    <Star />
-                  </div>
-                </div>
+                  media={settings.portrait}
+                  alt={locale === 'ar' ? settings.portrait?.alt_ar : settings.portrait?.alt_en}
+                  angle={170}
+                  mix={70}
+                  sizes="(max-width: 760px) 70vw, 30vw"
+                />
                 {settings.portrait_tag && <span className="portrait__tag label">{settings.portrait_tag}</span>}
               </div>
             </figure>
@@ -393,6 +407,17 @@ export async function EssayPage({
             </div>
           </header>
 
+          {essay.cover && (
+            <figure className="article__cover" data-reveal="mask">
+              <Plate
+                media={essay.cover}
+                alt={locale === 'ar' ? essay.cover.alt_ar : essay.cover.alt_en}
+                sizes="(max-width: 1100px) 100vw, 1100px"
+                priority
+              />
+            </figure>
+          )}
+
           <article className="readingcard" data-reveal="" style={{ ['--d' as string]: '80ms' }}>
             <Prose content={essay.body} format={essay.content_format} />
             <div className="endmark" aria-hidden="true">
@@ -567,16 +592,30 @@ export async function DesignPage({
       {images.length > 4 && (
         <section className="section section--tight wrap">
           <div className="scatter">
-            <figure className="s5" data-reveal="mask" data-float="0.9">
-              <Plate
-                media={images[4].media}
-                alt={locale === 'ar' ? images[4].media?.alt_ar : images[4].media?.alt_en}
-                ratio="16/9"
-              />
-              <figcaption className="label">
-                05 . {(locale === 'ar' ? images[4].caption_ar : images[4].caption_en) ?? ''}
-              </figcaption>
-            </figure>
+            {/* the fifth runs wide, and any after it scatter in the same rhythm as the first four */}
+            {images.slice(4).map((image, j) => {
+              const wide = j === 0;
+              const spot = (j - 1) % 4;
+              return (
+                <figure
+                  key={image.id}
+                  className={wide ? 's5' : spots[spot]}
+                  data-reveal="mask"
+                  data-float={wide ? '0.9' : String(1 + (spot % 3) * 0.4)}
+                >
+                  <Plate
+                    media={image.media}
+                    alt={locale === 'ar' ? image.media?.alt_ar : image.media?.alt_en}
+                    angle={((j + 4) * 70 + 150) % 360}
+                    ratio={wide ? '16/9' : ['4/3', '3/4', '1/1', '5/4'][spot]}
+                    sizes={wide ? '(max-width: 760px) 100vw, 70vw' : undefined}
+                  />
+                  <figcaption className="label">
+                    {String(j + 5).padStart(2, '0')} . {(locale === 'ar' ? image.caption_ar : image.caption_en) ?? ''}
+                  </figcaption>
+                </figure>
+              );
+            })}
           </div>
         </section>
       )}

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { supabaseServer } from '@/lib/supabase-server';
 import { slugify, uniqueSlug } from '@/lib/slug';
 import { path } from '@/lib/i18n';
+import { readingMinutes } from '@/lib/dates';
 import type { Locale } from '@/lib/types';
 
 /**
@@ -94,12 +95,6 @@ export async function saveDraft(
   }
 
   return { ok: true, data: { slug } };
-}
-
-/** Words a minute, rounded up, never zero. */
-function readingMinutes(body: string): number {
-  const words = body.trim().split(/\s+/).filter(Boolean).length;
-  return Math.max(1, Math.round(words / 200));
 }
 
 export async function publishDraft(

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Em } from '@/lib/emphasis';
+import { Plate } from './Plate';
 import { formatDate, path, t, type StringKey } from '@/lib/i18n';
 import type { Design, Essay, Locale, SiteSettings } from '@/lib/types';
 
@@ -203,20 +204,15 @@ export function DesignsSection({
               >
                 <div className="designcard__plate" style={{ ['--ar' as string]: ['3/4', '1/1', '4/5'][i % 3] }}>
                   <span className="designcard__dot" aria-hidden="true" />
-                  <div
-                    className="plate"
-                    style={{
-                      ['--a' as string]: (i * 53) % 360,
-                      ['--m' as string]: 55 + ((i * 7) % 25),
-                      ...(i % 3 === 1 ? { ['--tone' as string]: 'var(--olive)' } : {})
-                    }}
-                  >
-                    <div className="plate__mark" aria-hidden="true">
-                      <svg viewBox="0 0 60 60">
-                        <use href="#star8" />
-                      </svg>
-                    </div>
-                  </div>
+                  <Plate
+                    media={design.cover}
+                    alt={locale === 'ar' ? design.cover?.alt_ar : design.cover?.alt_en}
+                    angle={(i * 53) % 360}
+                    mix={55 + ((i * 7) % 25)}
+                    tone={i % 3 === 1 ? 'olive' : undefined}
+                    sizes="(max-width: 760px) 100vw, 33vw"
+                    priority={i < 3}
+                  />
                 </div>
                 <div className="designcard__foot">
                   <span className="designcard__name">

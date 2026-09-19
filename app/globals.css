@@ -298,6 +298,17 @@ body.menu-open .menu__bloom { opacity: .16; translate: 0 0; }
   font-size: clamp(.95rem, 2.4vw, 1.9rem); letter-spacing: clamp(.16em, .9vw, .42em);
   margin: .35rem 0 0; color: var(--fg-soft); white-space: nowrap;
 }
+/* the English page leads with the Latin name, in the display serif */
+.calligraphy--latin {
+  font-family: var(--serif); font-weight: 300; direction: ltr;
+  font-size: clamp(2.6rem, 9vw, 8rem); line-height: 1.05;
+  letter-spacing: -.02em; padding-block: .08em;
+}
+/* and the Arabic name beneath it, which must never be spaced or uppercased */
+.latin--arabic {
+  font-family: var(--arabic); font-weight: 400; text-transform: none;
+  letter-spacing: 0; font-size: clamp(1.3rem, 3vw, 2.4rem); line-height: 1.4;
+}
 .roles { display: flex; align-items: center; justify-content: center; gap: .7rem; margin-top: 1.1rem; }
 .roles .dotsep { width: 4px; height: 4px; border-radius: 50%; background: var(--accent); }
 
@@ -409,6 +420,18 @@ body.menu-open .menu__bloom { opacity: .16; translate: 0 0; }
 .plate__mark { position: absolute; inset: 0; display: grid; place-items: center; color: var(--bg); opacity: .5; }
 .plate__mark svg { width: 24%; max-width: 90px; }
 .plate--arch { border-radius: 999px 999px 0 0; }
+
+/* a real photograph: no generated stripes or glaze over it */
+.plate--photo { background: var(--surface); }
+.plate--photo::before, .plate--photo::after { content: none; }
+.plate--photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+/* her portrait, when there is one, fills the arch */
+.portrait__arch.plate--photo { background: var(--surface); }
+
+/* the cover at the head of an essay */
+.article__cover { margin: 0 auto clamp(2rem, 5vw, 3.5rem); max-width: 1100px; }
+.article__cover .plate { aspect-ratio: 16 / 9; }
 
 /* ---------- 11. Contact ---------- */
 

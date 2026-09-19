@@ -5,6 +5,7 @@ import { saveSettings } from '@/app/(admin)/actions';
 import Flash from '@/components/admin/Flash';
 import ClearFlags from '@/components/admin/ClearFlags';
 import RichText from '@/components/admin/RichText';
+import { SinglePicture } from '@/components/admin/Pictures';
 import { toEditorHtml } from '@/lib/render';
 import type { Locale, SiteSettings } from '@/lib/types';
 
@@ -21,7 +22,13 @@ export default async function SettingsPage({
   const rtl = locale === 'ar';
 
   const supabase = await supabaseServer();
-  const { data } = await supabase.from('site_settings').select('*').eq('locale', locale).maybeSingle();
+  let { data, error } = await supabase
+    .from('site_settings')
+    .select('*, portrait:portrait_media_id (*)')
+    .eq('locale', locale)
+    .maybeSingle();
+  // before 011 there is no portrait column
+  if (error) ({ data } = await supabase.from('site_settings').select('*').eq('locale', locale).maybeSingle());
   const s = (data ?? {}) as SiteSettings;
 
   const metaLines = (s.about_meta ?? []).map((row) => `${row.label} | ${row.value}`).join('\n');
@@ -178,6 +185,13 @@ export default async function SettingsPage({
           </button>
         </div>
       </form>
+
+      <SinglePicture
+        target={{ type: 'portrait' }}
+        initial={s.portrait ?? null}
+        title="Portrait"
+        hint="The picture in the arch beside About. The same one shows on the Arabic and English pages. A tall picture works best."
+      />
     </>
   );
 }

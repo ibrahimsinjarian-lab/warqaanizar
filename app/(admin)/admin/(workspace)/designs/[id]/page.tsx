@@ -9,6 +9,8 @@ import { path } from '@/lib/i18n';
 import { toDateInput } from '@/lib/dates';
 import { toEditorHtml } from '@/lib/render';
 import RichText from '@/components/admin/RichText';
+import { ProjectPictures, SinglePicture } from '@/components/admin/Pictures';
+import type { PlateRow } from '@/app/(admin)/media-actions';
 import type { Design, Locale } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -24,7 +26,7 @@ export default async function DesignEditor({
   const flags = await searchParams;
 
   const supabase = await supabaseServer();
-  const { data } = await supabase.from('designs').select('*').eq('id', id).maybeSingle();
+  const { data } = await supabase.from('designs').select('*, cover:cover_media_id (*)').eq('id', id).maybeSingle();
   if (!data) notFound();
 
   const design = data as Design;
@@ -37,6 +39,13 @@ export default async function DesignEditor({
     .eq('group_id', design.group_id)
     .neq('id', design.id)
     .maybeSingle();
+
+  const { data: plateRows } = await supabase
+    .from('design_images')
+    .select('id, caption_ar, caption_en, sort, media:media_id (*)')
+    .eq('group_id', design.group_id)
+    .order('sort', { ascending: true });
+  const plates = ((plateRows ?? []) as unknown as PlateRow[]).filter((p) => p.media);
 
   return (
     <>
@@ -257,6 +266,16 @@ export default async function DesignEditor({
         </div>
 
       </form>
+
+      <SinglePicture
+        target={{ type: 'cover', kind: 'designs', groupId: design.group_id }}
+        initial={design.cover ?? null}
+        locale={locale}
+        title="Cover picture"
+        hint="Shown on the projects grid and when it is shared. The Arabic and English versions share it."
+      />
+
+      <ProjectPictures groupId={design.group_id} initial={plates} locale={locale} />
 
       <details className="danger-zone">
         <summary>Delete this project</summary>

@@ -55,12 +55,20 @@ const FALLBACK_SETTINGS: Record<Locale, SiteSettings> = {
   }
 };
 
+/** Every piece comes with its cover picture, when it has one. */
+const WITH_COVER = '*, cover:cover_media_id (*)';
+
 export async function getSettings(locale: Locale): Promise<SiteSettings> {
-  const { data, error } = await publicClient()
+  let { data, error } = await publicClient()
     .from('site_settings')
-    .select('*')
+    .select('*, portrait:portrait_media_id (*)')
     .eq('locale', locale)
     .maybeSingle();
+
+  // before 011 there is no portrait column: never let that blank the site
+  if (error) {
+    ({ data, error } = await publicClient().from('site_settings').select('*').eq('locale', locale).maybeSingle());
+  }
 
   if (error || !data) return FALLBACK_SETTINGS[locale];
   const row = data as SiteSettings;
@@ -70,7 +78,7 @@ export async function getSettings(locale: Locale): Promise<SiteSettings> {
 export async function getEssays(locale: Locale): Promise<Essay[]> {
   const { data } = await publicClient()
     .from('essays')
-    .select('*')
+    .select(WITH_COVER)
     .eq('locale', locale)
     .eq('status', 'published')
     .order('published_at', { ascending: false, nullsFirst: false });
@@ -79,7 +87,7 @@ export async function getEssays(locale: Locale): Promise<Essay[]> {
 
 export async function getEssay(locale: Locale, slug: string, preview = false): Promise<Essay | null> {
   const client = preview ? await supabaseServer() : publicClient();
-  let query = client.from('essays').select('*').eq('locale', locale).eq('slug', slug);
+  let query = client.from('essays').select(WITH_COVER).eq('locale', locale).eq('slug', slug);
   query = preview ? query.is('deleted_at', null) : query.eq('status', 'published');
   const { data } = await query.maybeSingle();
   if (!data) return null;
@@ -90,7 +98,7 @@ export async function getEssay(locale: Locale, slug: string, preview = false): P
 export async function getDesigns(locale: Locale): Promise<Design[]> {
   const { data } = await publicClient()
     .from('designs')
-    .select('*')
+    .select(WITH_COVER)
     .eq('locale', locale)
     .eq('status', 'published')
     .order('published_at', { ascending: false, nullsFirst: false });
@@ -99,7 +107,7 @@ export async function getDesigns(locale: Locale): Promise<Design[]> {
 
 export async function getDesign(locale: Locale, slug: string, preview = false): Promise<Design | null> {
   const client = preview ? await supabaseServer() : publicClient();
-  let query = client.from('designs').select('*').eq('locale', locale).eq('slug', slug);
+  let query = client.from('designs').select(WITH_COVER).eq('locale', locale).eq('slug', slug);
   query = preview ? query.is('deleted_at', null) : query.eq('status', 'published');
   const { data } = await query.maybeSingle();
   if (!data) return null;
@@ -135,7 +143,7 @@ export async function getSibling(
 /** Preview reads by id, with the editor's own session, so drafts are visible. */
 export async function getPieceById(kind: 'essays' | 'designs', id: string) {
   const supabase = await supabaseServer();
-  const { data } = await supabase.from(kind).select('*').eq('id', id).maybeSingle();
+  const { data } = await supabase.from(kind).select(WITH_COVER).eq('id', id).maybeSingle();
   if (!data) return null;
   const row = data as Record<string, unknown>;
   return {
@@ -199,9 +207,4 @@ export async function getCounterpartSlug(
   return theirs ? { locale: other, slug: theirs.slug as string } : null;
 }
 
-export function mediaUrl(path: string | null | undefined): string | null {
-  if (!path) return null;
-  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!base) return null;
-  return `${base}/storage/v1/object/public/media/${path}`;
-}
+export { mediaUrl } from './media';
