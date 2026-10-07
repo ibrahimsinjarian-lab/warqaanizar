@@ -6,9 +6,19 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false }
 };
 
+/**
+ * Her choice of light or dark is applied before the first paint, so the
+ * editor never flashes the other one on the way in.
+ */
+const THEME = `try{var t=localStorage.getItem('warqaa.editor.theme');document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light')}catch(e){}`;
+
 export default function AdminRootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    // the script sets data-theme before React arrives, which is the point of it
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME }} />
+      </head>
       <body>{children}</body>
     </html>
   );

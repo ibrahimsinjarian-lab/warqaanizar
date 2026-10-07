@@ -182,6 +182,27 @@ export async function saveDesign(intent: Intent, form: FormData) {
   redirect(`/admin/designs/${id}?saved=1&state=${written[0].status}`);
 }
 
+/**
+ * Takes a piece off the site and changes nothing else. It has its own
+ * action because it sits outside the editing form, where a save would see
+ * empty fields and write them.
+ */
+export async function unpublishPiece(form: FormData) {
+  const kind = str(form, 'kind') as Kind;
+  const id = str(form, 'id');
+  const locale = str(form, 'locale') as Locale;
+  const slug = str(form, 'slug');
+
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase.from(kind).update({ status: 'draft' }).eq('id', id).select('id, status');
+
+  if (error) redirect(`/admin/${kind}/${id}?error=${encodeURIComponent(error.message)}`);
+  if (!data || data.length === 0) redirect(`/admin/${kind}/${id}?error=${encodeURIComponent(NOT_WRITTEN)}`);
+
+  refresh(kind, locale, slug);
+  redirect(`/admin/${kind}/${id}?saved=1&state=${data[0].status}`);
+}
+
 /* ------------------------------------------------------------------- trash */
 
 /** ED 02. Deleting moves a piece to the trash. Nothing is destroyed here. */

@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { currentAdmin } from '@/lib/supabase-server';
 import AdminNav from '@/components/admin/AdminNav';
+import ThemeToggle from '@/components/admin/ThemeToggle';
+import NavProgress from '@/components/admin/NavProgress';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +31,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="admin">
+      <NavProgress />
       <nav className="admin__nav">
         <div className="admin__brand">
           Warqaa Nizar
@@ -36,6 +39,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
         <AdminNav />
         <div className="admin__foot">
+          <ThemeToggle />
           <span>{name ?? user.email}</span>
           <Link href="/" target="_blank">
             View the site

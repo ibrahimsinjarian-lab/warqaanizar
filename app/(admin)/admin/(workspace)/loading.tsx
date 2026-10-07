@@ -7,11 +7,15 @@ export default function Loading() {
     <div className="skeleton" aria-label="Loading" aria-busy="true">
       <span className="skeleton__line skeleton__line--title" />
       <span className="skeleton__line skeleton__line--wide" />
-      <div className="skeleton__rows">
-        <span className="skeleton__row" />
-        <span className="skeleton__row" />
-        <span className="skeleton__row" />
-        <span className="skeleton__row" />
+      <div className="skeleton__cols">
+        <div className="skeleton" style={{ gap: '1.1rem' }}>
+          <span className="skeleton__block skeleton__block--short" />
+          <span className="skeleton__block" />
+        </div>
+        <div className="skeleton" style={{ gap: '1.1rem' }}>
+          <span className="skeleton__block skeleton__block--short" />
+          <span className="skeleton__block skeleton__block--short" />
+        </div>
       </div>
     </div>
   );

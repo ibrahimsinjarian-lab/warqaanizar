@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { supabaseServer } from '@/lib/supabase-server';
-import { saveEssay, startCounterpart, translatePiece, trashPiece } from '@/app/(admin)/actions';
+import { saveEssay, startCounterpart, translatePiece, trashPiece, unpublishPiece } from '@/app/(admin)/actions';
 import Flash from '@/components/admin/Flash';
 import ClearFlags from '@/components/admin/ClearFlags';
 import { LocalePill, StatusPill, TranslationPill } from '@/components/admin/StatusPills';
@@ -31,6 +31,7 @@ export default async function EssayEditor({
   const essay = data as Essay;
   const locale = essay.locale as Locale;
   const rtl = locale === 'ar';
+  const live = essay.status === 'published';
 
   const { data: siblingRow } = await supabase
     .from('essays')
@@ -105,7 +106,7 @@ export default async function EssayEditor({
         error={flags.error}
       />
 
-      <form action={saveEssay.bind(null, 'save')} className="form">
+      <form action={saveEssay.bind(null, live ? 'publish' : 'save')} className="form">
         <input type="hidden" name="id" value={essay.id} />
         <input type="hidden" name="locale" value={locale} />
         <input type="hidden" name="previousSlug" value={essay.slug} />
@@ -114,142 +115,145 @@ export default async function EssayEditor({
         <input type="hidden" name="currentStatus" value={essay.status} />
         <input type="hidden" name="previousPublishedAt" value={essay.published_at ?? ''} />
 
-        <div className="publishbar">
-          <span className="publishbar__state">
-            {essay.status === 'published' ? (
+        <div className="actionbar">
+          <span className="actionbar__state">
+            {live ? (
               <>
                 <span className="pill pill--live">live</span>
-                <span style={{ color: 'var(--mute)' }}>Anyone can read this.</span>
+                <span className="mute">Anyone can read this.</span>
               </>
             ) : (
               <>
                 <span className="pill pill--draft">draft</span>
-                <span style={{ color: 'var(--mute)' }}>Only you can see this.</span>
+                <span className="mute">Only you can see this.</span>
               </>
             )}
           </span>
-          <span className="publishbar__grow" />
-          <button type="submit">Save</button>
-          {essay.status === 'published' ? (
+          <span className="grow" />
+          {live ? (
+            <button type="submit" className="primary">
+              Save and update the page
+            </button>
+          ) : (
             <>
-              <button type="submit" formAction={saveEssay.bind(null, 'unpublish')}>
-                Unpublish
-              </button>
+              <button type="submit">Save draft</button>
               <button type="submit" formAction={saveEssay.bind(null, 'publish')} className="primary">
-                Update the page
+                Publish it
               </button>
             </>
-          ) : (
-            <button type="submit" formAction={saveEssay.bind(null, 'publish')} className="primary">
-              Publish it
-            </button>
           )}
         </div>
 
-        <div className="field">
-          <label htmlFor="title">Title</label>
-          <input id="title" name="title" type="text" defaultValue={essay.title} dir={rtl ? 'rtl' : 'ltr'} required />
-          <small>A word between *asterisks* is set in italic, the way the old titles were.</small>
-        </div>
+        <div className="cols">
+          <div className="cols__main">
+            <div className="card">
+              <div className="field">
+                <label htmlFor="title">Title</label>
+                <input id="title" name="title" type="text" defaultValue={essay.title} dir={rtl ? 'rtl' : 'ltr'} required />
+                <small>A word between *asterisks* is set in italic, the way the old titles were.</small>
+              </div>
 
-        <div className="grid-2">
-          <div className="field">
-            <label htmlFor="slug">Address</label>
-            <input id="slug" name="slug" type="text" defaultValue={essay.slug} />
-            <small>
-              {path(locale, 'essays')}/<strong>{essay.slug}</strong>. Leave it and it follows the title.
-            </small>
-          </div>
-          <div className="field">
-            <label htmlFor="category">Kind of essay</label>
-            <select id="category" name="category" defaultValue={essay.category}>
-              <option value="general">General</option>
-              <option value="design">Design</option>
-            </select>
-            <small>This is what the filter on the essays page sorts by.</small>
-          </div>
-        </div>
-
-        <div className="field">
-          <label htmlFor="excerpt">Summary</label>
-          <textarea
-            id="excerpt"
-            name="excerpt"
-            defaultValue={essay.excerpt ?? ''}
-            dir={rtl ? 'rtl' : 'ltr'}
-            style={{ minHeight: '5rem' }}
-          />
-          <small>One or two sentences. Used for search results and shared links.</small>
-        </div>
-
-        <div className="field">
-          <label htmlFor="body">The essay</label>
-          <RichText
-            name="body"
-            defaultValue={toEditorHtml(essay.body, essay.content_format)}
-            dir={rtl ? 'rtl' : 'ltr'}
-            minHeight="26rem"
-          />
-        </div>
-
-        <div className="panel">
-          <div className="grid-2">
-            <div className="field">
-              <label htmlFor="published_at">Date</label>
-              <input id="published_at" name="published_at" type="date" defaultValue={toDateInput(essay.published_at)} />
+              <div className="field">
+                <label htmlFor="excerpt">Summary</label>
+                <textarea id="excerpt" name="excerpt" defaultValue={essay.excerpt ?? ''} dir={rtl ? 'rtl' : 'ltr'} rows={2} />
+                <small>One or two sentences. Used for search results and shared links.</small>
+              </div>
             </div>
-          </div>
 
-          <div className="field" style={{ marginTop: '1.1rem' }}>
-            <label htmlFor="tags">Tags</label>
-            <input id="tags" name="tags" type="text" defaultValue={essay.tags.join(', ')} dir={rtl ? 'rtl' : 'ltr'} />
-            <small>Separated by commas. They show under the title.</small>
-          </div>
-
-          <div className="grid-2" style={{ marginTop: '1.1rem' }}>
             <div className="field">
-              <label htmlFor="seo_title">Title for search engines</label>
-              <input id="seo_title" name="seo_title" type="text" defaultValue={essay.seo_title ?? ''} />
-              <small>Leave empty to use the title above.</small>
-            </div>
-            <div className="field">
-              <label htmlFor="seo_description">Description for search engines</label>
-              <input
-                id="seo_description"
-                name="seo_description"
-                type="text"
-                defaultValue={essay.seo_description ?? ''}
+              <label htmlFor="body">The essay</label>
+              <RichText
+                name="body"
+                defaultValue={toEditorHtml(essay.body, essay.content_format)}
+                dir={rtl ? 'rtl' : 'ltr'}
+                minHeight="30rem"
               />
-              <small>Leave empty to use the summary.</small>
             </div>
           </div>
-        </div>
 
+          <aside className="cols__rail">
+            <SinglePicture
+              target={{ type: 'cover', kind: 'essays', groupId: essay.group_id }}
+              initial={essay.cover ?? null}
+              locale={locale}
+              title="Cover picture"
+              hint="Optional. Wide at the top of the essay, and when the link is shared."
+            />
+
+            <div className="card">
+              <h2 className="card__title">About the essay</h2>
+
+              <div className="field">
+                <label htmlFor="category">Kind of essay</label>
+                <select id="category" name="category" defaultValue={essay.category}>
+                  <option value="general">General</option>
+                  <option value="design">Design</option>
+                </select>
+                <small>What the filter on the essays page sorts by.</small>
+              </div>
+
+              <div className="field">
+                <label htmlFor="tags">Tags</label>
+                <input id="tags" name="tags" type="text" defaultValue={essay.tags.join(', ')} dir={rtl ? 'rtl' : 'ltr'} />
+                <small>Separated by commas. They show under the title.</small>
+              </div>
+
+              <div className="field">
+                <label htmlFor="published_at">Date</label>
+                <input id="published_at" name="published_at" type="date" defaultValue={toDateInput(essay.published_at)} />
+              </div>
+            </div>
+
+            <details className="card drawer">
+              <summary>Address and search engines</summary>
+              <div className="field">
+                <label htmlFor="slug">Address</label>
+                <input id="slug" name="slug" type="text" defaultValue={essay.slug} />
+                <small>
+                  {path(locale, 'essays')}/<strong>{essay.slug}</strong>. Leave it and it follows the title.
+                </small>
+              </div>
+              <div className="field">
+                <label htmlFor="seo_title">Title for search engines</label>
+                <input id="seo_title" name="seo_title" type="text" defaultValue={essay.seo_title ?? ''} />
+                <small>Leave empty to use the title above.</small>
+              </div>
+              <div className="field">
+                <label htmlFor="seo_description">Description for search engines</label>
+                <input id="seo_description" name="seo_description" type="text" defaultValue={essay.seo_description ?? ''} />
+                <small>Leave empty to use the summary.</small>
+              </div>
+            </details>
+          </aside>
+        </div>
       </form>
 
-      <SinglePicture
-        target={{ type: 'cover', kind: 'essays', groupId: essay.group_id }}
-        initial={essay.cover ?? null}
-        locale={locale}
-        title="Cover picture"
-        hint="Optional. Shown wide at the top of the essay and when it is shared. The Arabic and English versions share it."
-      />
-
-      <details className="danger-zone">
-        <summary>Delete this essay</summary>
-        <p>
-          It moves to the trash and comes off the site straight away. You can put it back from the
-          trash afterwards.
-        </p>
+      <details className="drawer drawer--danger">
+        <summary>Take it off the site, or delete it</summary>
+        <div className="drawer__body">
+          {live && (
+            <form action={unpublishPiece} className="drawer__row">
+              <input type="hidden" name="kind" value="essays" />
+              <input type="hidden" name="id" value={essay.id} />
+              <input type="hidden" name="locale" value={locale} />
+              <input type="hidden" name="slug" value={essay.slug} />
+              <p>Unpublishing keeps everything and takes the page off the site. You can publish it again later.</p>
+              <button type="submit">Unpublish it</button>
+            </form>
+          )}
+          <div className="drawer__row">
+          <p>Deleting moves it to the trash and off the site. You can put it back from the trash.</p>
         <form action={trashPiece}>
           <input type="hidden" name="kind" value="essays" />
           <input type="hidden" name="id" value={essay.id} />
           <input type="hidden" name="locale" value={locale} />
           <input type="hidden" name="slug" value={essay.slug} />
           <button type="submit" className="danger">
-            Yes, move it to the trash
+            Move it to the trash
           </button>
         </form>
+          </div>
+        </div>
       </details>
     </>
   );
