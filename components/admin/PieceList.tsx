@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { supabaseServer } from '@/lib/supabase-server';
+import { restorePiece } from '@/app/(admin)/actions';
 import Flash from './Flash';
-import { LocalePill, StatusPill, TranslationPill } from './StatusPills';
+import ClearFlags from './ClearFlags';
+import PieceRows, { type Group } from './PieceRows';
 
 interface Row {
   id: string;
@@ -13,6 +15,7 @@ interface Row {
   translation_state: string;
   published_at: string | null;
   updated_at: string;
+  deleted_at?: string | null;
 }
 
 const WORDS = {
@@ -22,26 +25,36 @@ const WORDS = {
 
 export default async function PieceList({
   kind,
-  message
+  message,
+  trashed
 }: {
   kind: 'essays' | 'designs';
   message: { saved?: string; error?: string; note?: string };
+  /** the id of a piece just moved to the trash, to offer it back */
+  trashed?: string;
 }) {
   const supabase = await supabaseServer();
-  const { data, error } = await supabase
-    .from(kind)
-    .select('*')
-    .order('updated_at', { ascending: false });
+  const { data, error } = await supabase.from(kind).select('*').order('updated_at', { ascending: false });
 
-  const rows = ((data as (Row & { deleted_at?: string | null })[]) ?? []).filter((r) => !r.deleted_at);
+  const rows = ((data as Row[]) ?? []).filter((r) => !r.deleted_at);
   const words = WORDS[kind];
 
   // the two language versions of one piece sit together
-  const groups = new Map<string, Row[]>();
-  rows.forEach((row) => {
-    const list = groups.get(row.group_id) ?? [];
-    list.push(row);
-    groups.set(row.group_id, list);
+  const byGroup = new Map<string, Row[]>();
+  rows.forEach((row) => byGroup.set(row.group_id, [...(byGroup.get(row.group_id) ?? []), row]));
+
+  const groups: Group[] = [...byGroup.values()].map((versions) => {
+    const ar = versions.find((v) => v.locale === 'ar') ?? null;
+    const en = versions.find((v) => v.locale === 'en') ?? null;
+    const pick = (v: Row | null) =>
+      v && { id: v.id, title: v.title, slug: v.slug, status: v.status, translation_state: v.translation_state };
+    return {
+      key: versions[0].group_id,
+      ar: pick(ar),
+      en: pick(en),
+      updated: versions.map((v) => v.updated_at).sort().at(-1) ?? '',
+      published: versions.map((v) => v.published_at ?? '').sort().at(-1) ?? ''
+    };
   });
 
   return (
@@ -52,7 +65,7 @@ export default async function PieceList({
           <p>{words.blurb}</p>
         </div>
         <div className="actions">
-          <Link className="button" href={`/admin/${kind}/trash`}>
+          <Link className="button button--quiet" href={`/admin/${kind}/trash`}>
             Trash
           </Link>
           <Link className="button button--primary" href={`/admin/${kind}/new`}>
@@ -61,58 +74,28 @@ export default async function PieceList({
         </div>
       </div>
 
+      <ClearFlags />
+      {trashed && (
+        <form action={restorePiece} className="note note--ok note--row" style={{ marginBottom: '1.2rem' }}>
+          <input type="hidden" name="kind" value={kind} />
+          <input type="hidden" name="id" value={trashed} />
+          <span>Moved to the trash, and off the site.</span>
+          <button type="submit" className="linkish">
+            Undo
+          </button>
+        </form>
+      )}
       <Flash {...message} />
-      {error && <div className="note">{error.message}</div>}
+      {error && <div className="note note--bad">{error.message}</div>}
 
-      {groups.size === 0 ? (
+      {groups.length === 0 ? (
         <div className="rows">
           <span className="row--empty">
             Nothing yet. Start with a new {words.one} in Arabic, and the English version follows from it.
           </span>
         </div>
       ) : (
-        <div className="rows">
-          {[...groups.values()].map((versions) => {
-            const ar = versions.find((v) => v.locale === 'ar');
-            const en = versions.find((v) => v.locale === 'en');
-            // the editor is in English, so the English title leads and the Arabic one sits under it
-            const lead = en ?? ar!;
-            const other = lead === en ? ar : null;
-
-            return (
-              <div className="row" key={lead.group_id} style={{ gridTemplateColumns: '1fr auto' }}>
-                <div>
-                  <div className="row__title">
-                    <Link href={`/admin/${kind}/${lead.id}`}>{lead.title}</Link>
-                  </div>
-                  {other && (
-                    <div className="row__second" dir="rtl">
-                      {other.title}
-                    </div>
-                  )}
-                  <div className="row__meta">/{lead.slug}</div>
-                </div>
-                <div className="actions" style={{ padding: 0 }}>
-                  {ar && (
-                    <Link className="button" href={`/admin/${kind}/${ar.id}`}>
-                      <LocalePill locale="ar" />
-                      <StatusPill status={ar.status} />
-                    </Link>
-                  )}
-                  {en ? (
-                    <Link className="button" href={`/admin/${kind}/${en.id}`}>
-                      <LocalePill locale="en" />
-                      <TranslationPill state={en.translation_state} />
-                      <StatusPill status={en.status} />
-                    </Link>
-                  ) : (
-                    <span className="pill">no English version</span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <PieceRows kind={kind} groups={groups} />
       )}
     </>
   );

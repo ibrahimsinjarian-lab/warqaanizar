@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import RichText from './RichText';
+import { ask } from './Ask';
 import { Captions, Descriptions, Drop, NotReady, Thumb, UploadNotes, useUploader } from './Pictures';
 import type { Reduction } from '@/lib/compress';
 import { uploadsReady } from '@/lib/cloudinary';
@@ -13,6 +14,7 @@ import {
   orderSections,
   removePlate,
   removeSection,
+  setLayout as setLayoutNow,
   type PlateRow
 } from '@/app/(admin)/media-actions';
 import type { DesignSection, Layout, Locale, Media } from '@/lib/types';
@@ -80,10 +82,16 @@ export default function ProjectBuilder({ groupId, locale, initialLayout, initial
   async function dropSection(section: DesignSection, index: number) {
     const name = (rtl ? section.heading_ar : section.heading_en) || `section ${index + 1}`;
     const pictures = plates.filter((p) => p.section_id === section.id).length;
-    const warning =
-      `Remove "${name}"? Its text goes in both languages.` +
-      (pictures ? ` Its ${pictures === 1 ? 'picture stays' : `${pictures} pictures stay`} on the project, outside any section.` : '');
-    if (!window.confirm(warning)) return;
+    const answer = await ask({
+      title: `Remove “${name}”?`,
+      body:
+        'Its text goes, in Arabic and in English, and this cannot be undone.' +
+        (pictures ? ` Its ${pictures === 1 ? 'picture stays' : `${pictures} pictures stay`} on the project, outside any section.` : ''),
+      ok: 'Remove the section',
+      cancel: 'Keep it',
+      danger: true
+    });
+    if (!answer) return;
 
     if (say(await removeSection(section.id))) {
       setSections((s) => s.filter((x) => x.id !== section.id));
@@ -114,7 +122,23 @@ export default function ProjectBuilder({ groupId, locale, initialLayout, initial
   }
 
   async function takeOff(plate: PlateRow) {
+    const answer = await ask({
+      title: 'Take this picture off the project?',
+      body: 'Its caption goes with it. The picture itself stays in your uploads, so you can add it again with Choose from uploaded.',
+      ok: 'Take it off',
+      cancel: 'Keep it',
+      danger: true
+    });
+    if (!answer) return;
     if (say(await removePlate(plate.id))) setPlates((p) => p.filter((x) => x.id !== plate.id));
+  }
+
+  /** Saves at once, like the pictures beside it, and both languages share it. */
+  async function chooseLayout(next: Layout) {
+    if (next === layout) return;
+    const before = layout;
+    setLayout(next);
+    if (!say(await setLayoutNow(groupId, next))) setLayout(before);
   }
 
   const heading = (s: DesignSection) => (rtl ? s.heading_ar : s.heading_en) ?? '';
@@ -142,6 +166,7 @@ export default function ProjectBuilder({ groupId, locale, initialLayout, initial
         )
       }
       onProblem={setProblem}
+      rtl={rtl}
     />
   );
 
@@ -150,9 +175,8 @@ export default function ProjectBuilder({ groupId, locale, initialLayout, initial
   return (
     <div className="builder">
       <input type="hidden" name="group_id" value={groupId} />
-      <input type="hidden" name="layout" value={layout} />
 
-      <div className="card card--layout">
+      <div className="card card--layout" data-autosave>
         <div className="card__head">
           <div>
             <h2 className="card__title">Pictures and text</h2>
@@ -163,14 +187,19 @@ export default function ProjectBuilder({ groupId, locale, initialLayout, initial
             </p>
           </div>
           <div className="segmented" role="group" aria-label="Layout">
-            <button type="button" aria-pressed={layout === 'slideshow'} onClick={() => setLayout('slideshow')}>
+            <button type="button" aria-pressed={layout === 'slideshow'} onClick={() => chooseLayout('slideshow')}>
               Slideshow
             </button>
-            <button type="button" aria-pressed={layout === 'sections'} onClick={() => setLayout('sections')}>
+            <button type="button" aria-pressed={layout === 'sections'} onClick={() => chooseLayout('sections')}>
               In sections
             </button>
           </div>
         </div>
+
+        <p className="savesnote">
+          <AutoIcon /> The layout, the pictures, their words and their order save as you go. The text in each section
+          saves with the Save button.
+        </p>
 
         {!uploadsReady() && <NotReady />}
         {problem && <p className="note note--bad">{problem}</p>}
@@ -201,20 +230,36 @@ export default function ProjectBuilder({ groupId, locale, initialLayout, initial
                   aria-label={`Heading of section ${i + 1}`}
                 />
                 <span className="sec__tools">
-                  <button type="button" className="icon" aria-label="Move section up" disabled={i === 0} onClick={() => moveSection(i, i - 1)}>
-                    &uarr;
+                  <button
+                    type="button"
+                    className="icon"
+                    aria-label="Move section up"
+                    title="Move up"
+                    disabled={i === 0}
+                    onClick={() => moveSection(i, i - 1)}
+                  >
+                    <Arrow up />
                   </button>
                   <button
                     type="button"
                     className="icon"
                     aria-label="Move section down"
+                    title="Move down"
                     disabled={i === sections.length - 1}
                     onClick={() => moveSection(i, i + 1)}
                   >
-                    &darr;
+                    <Arrow />
                   </button>
-                  <button type="button" className="icon icon--bad" aria-label="Remove this section" onClick={() => dropSection(section, i)}>
-                    &#10005;
+                  <button
+                    type="button"
+                    className="icon icon--bad"
+                    aria-label="Remove this section"
+                    title="Remove this section"
+                    onClick={() => dropSection(section, i)}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                      <path d="M6 6l12 12M18 6L6 18" />
+                    </svg>
                   </button>
                 </span>
               </header>
@@ -222,7 +267,7 @@ export default function ProjectBuilder({ groupId, locale, initialLayout, initial
               <RichText name={`section_body_${section.id}`} defaultValue={bodies[section.id] ?? ''} dir={dir} minHeight="11rem" />
 
               {layout === 'sections' && (
-                <div className="sec__pictures">
+                <div className="sec__pictures" data-autosave>
                   <p className="hint hint--tight">Pictures beside this text</p>
                   {pictureList(own, section.id, 'None yet.')}
                 </div>
@@ -237,7 +282,7 @@ export default function ProjectBuilder({ groupId, locale, initialLayout, initial
       </div>
 
       {layout === 'sections' && loose.length > 0 && (
-        <div className="card">
+        <div className="card" data-autosave>
           <h2 className="card__title">Not in a section</h2>
           <p className="hint">These show after the last section. Open a picture and pick a section to place it.</p>
           {pictureList(loose, null, '')}
@@ -261,7 +306,8 @@ function PictureList({
   onRemove,
   onAdded,
   onEdited,
-  onProblem
+  onProblem,
+  rtl
 }: {
   list: PlateRow[];
   groupId: string;
@@ -276,6 +322,8 @@ function PictureList({
   onAdded: (rows: PlateRow[]) => void;
   onEdited: (id: string, patch: { plate?: Partial<PlateRow>; media?: Partial<PlateRow['media']> }) => void;
   onProblem: (message: string | null) => void;
+  /** the page is in Arabic: its descriptions lead */
+  rtl: boolean;
 }) {
   const [dragging, setDragging] = useState<number | null>(null);
   const [open, setOpen] = useState<string | null>(null);
@@ -333,16 +381,27 @@ function PictureList({
               <Thumb media={plate.media} />
             </div>
             <div className="plist__meta">
-              <span className="plist__alt">{plate.media.alt_en || plate.media.alt_ar || 'No description yet'}</span>
+              <span className="plist__alt" dir={rtl ? 'rtl' : 'ltr'}>
+                {(rtl ? plate.media.alt_ar : plate.media.alt_en) || plate.media.alt_en || plate.media.alt_ar || 'No description yet'}
+              </span>
+              {(!plate.media.alt_ar || !plate.media.alt_en) && (
+                <span className="plist__missing">
+                  {!plate.media.alt_ar && !plate.media.alt_en
+                    ? 'Needs a description'
+                    : !plate.media.alt_ar
+                      ? 'Arabic description missing'
+                      : 'English description missing'}
+                </span>
+              )}
               <div className="plist__buttons">
-                <button type="button" aria-label="Move earlier" disabled={i === 0} onClick={() => onMove(i, i - 1)}>
-                  &uarr;
+                <button type="button" aria-label="Move earlier" title="Move earlier" disabled={i === 0} onClick={() => onMove(i, i - 1)}>
+                  <Arrow up />
                 </button>
-                <button type="button" aria-label="Move later" disabled={i === list.length - 1} onClick={() => onMove(i, i + 1)}>
-                  &darr;
+                <button type="button" aria-label="Move later" title="Move later" disabled={i === list.length - 1} onClick={() => onMove(i, i + 1)}>
+                  <Arrow />
                 </button>
                 <button type="button" aria-expanded={open === plate.id} onClick={() => setOpen(open === plate.id ? null : plate.id)}>
-                  {open === plate.id ? 'Close' : 'Words'}
+                  {open === plate.id ? 'Done' : 'Describe'}
                 </button>
               </div>
             </div>
@@ -386,5 +445,23 @@ function PictureList({
       <UploadNotes notes={notes} />
       {error && <p className="note">{error}</p>}
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ icons */
+
+function Arrow({ up }: { up?: boolean }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={up ? 'M12 19V5M5 12l7-7 7 7' : 'M12 5v14M5 12l7 7 7-7'} />
+    </svg>
+  );
+}
+
+function AutoIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
   );
 }

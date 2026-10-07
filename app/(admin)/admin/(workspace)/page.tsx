@@ -35,7 +35,7 @@ function List({ kind, items }: { kind: 'essays' | 'designs'; items: Piece[] }) {
   return (
     <div className="rows">
       {items.map((item) => (
-        <div className="row" key={item.id}>
+        <div className="row row--link row--wide" key={item.id}>
           <div>
             <div className="row__title">
               <Link href={`/admin/${kind}/${item.id}`}>{item.title}</Link>

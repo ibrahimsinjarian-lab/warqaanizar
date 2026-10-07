@@ -103,6 +103,8 @@ const WORDS: Record<Kind, { one: string; back: string }> = {
   designs: { one: 'project', back: '/admin/designs' }
 };
 
+const readMinutes = (words: number) => Math.max(1, Math.round(words / 200));
+
 function storageKey(kind: Kind) {
   return `warqaa-wizard-${kind}`;
 }
@@ -238,7 +240,8 @@ export default function Wizard({ kind }: { kind: Kind }) {
       }
       if (!publish) {
         clearAll();
-        window.location.href = `/admin/${kind}/${id}?saved=1`;
+        // a project goes on to its pictures; an essay was simply put aside
+        window.location.href = `/admin/${kind}/${id}?${kind === 'designs' ? 'start' : 'saved'}=1`;
         return;
       }
       const published = await publishDraft(kind, id, locale);
@@ -321,9 +324,11 @@ export default function Wizard({ kind }: { kind: Kind }) {
 
       {onReview ? (
         <>
-          <h1 className="wizard__title">Ready?</h1>
+          <h1 className="wizard__title">{kind === 'designs' ? 'Now the pictures' : 'Ready?'}</h1>
           <p className="wizard__hint">
-            Publishing puts it on the site straight away. Saving keeps it private until you come back.
+            {kind === 'designs'
+              ? 'A project is mostly its pictures. The project page opens next, where you add them and the cover, then publish it.'
+              : 'Publishing puts it on the site straight away. Saving keeps it private until you come back.'}
           </p>
 
           <div className="panel wizard__review">
@@ -341,7 +346,8 @@ export default function Wizard({ kind }: { kind: Kind }) {
               <div>
                 <span className="eyebrow">Length</span>
                 <p>
-                  {wordCount} words, about {Math.max(1, Math.round(wordCount / 200))} minutes to read
+                  {wordCount} {wordCount === 1 ? 'word' : 'words'}, about {readMinutes(wordCount)}{' '}
+                  {readMinutes(wordCount) === 1 ? 'minute' : 'minutes'} to read
                 </p>
               </div>
             )}
@@ -354,12 +360,20 @@ export default function Wizard({ kind }: { kind: Kind }) {
               Back
             </button>
             <span style={{ flex: 1 }} />
-            <button type="button" onClick={() => finish(false)} disabled={busy}>
-              Save without publishing
-            </button>
-            <button type="button" className="primary" onClick={() => finish(true)} disabled={busy}>
-              {busy ? 'Working' : 'Publish it'}
-            </button>
+            {kind === 'designs' ? (
+              <button type="button" className="primary" onClick={() => finish(false)} disabled={busy}>
+                {busy ? 'Saving' : 'Save and add pictures'}
+              </button>
+            ) : (
+              <>
+                <button type="button" onClick={() => finish(false)} disabled={busy}>
+                  Save without publishing
+                </button>
+                <button type="button" className="primary" onClick={() => finish(true)} disabled={busy}>
+                  {busy ? 'Publishing' : 'Publish it'}
+                </button>
+              </>
+            )}
           </div>
         </>
       ) : (
@@ -446,7 +460,9 @@ export default function Wizard({ kind }: { kind: Kind }) {
           </div>
 
           {current.fields.some((f) => f.type === 'body') && wordCount > 0 && (
-            <p className="wizard__count">{wordCount} words so far</p>
+            <p className="wizard__count">
+              {wordCount} {wordCount === 1 ? 'word' : 'words'} so far
+            </p>
           )}
 
           {error && (

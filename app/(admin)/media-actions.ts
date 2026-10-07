@@ -290,6 +290,24 @@ export async function addSection(groupId: string): Promise<Result<DesignSection>
   return { ok: true, data: data as DesignSection };
 }
 
+/**
+ * Slideshow or sections. It used to wait for Save while looking instant, so
+ * now it is instant, like everything else on the pictures card. Both
+ * languages share it.
+ */
+export async function setLayout(groupId: string, layout: 'slideshow' | 'sections'): Promise<Result> {
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase.from('designs').update({ layout }).eq('group_id', groupId).select('id');
+
+  if (error) {
+    const missing = /layout/.test(error.message);
+    return { ok: false, error: missing ? 'Run 012_sections.sql in Supabase first, then try again.' : error.message };
+  }
+  if (!data?.length) return { ok: false, error: SIGNED_OUT };
+  refreshSite();
+  return { ok: true, data: null };
+}
+
 /** Its pictures stay on the project, outside any section, so nothing is lost. */
 export async function removeSection(id: string): Promise<Result> {
   const supabase = await supabaseServer();

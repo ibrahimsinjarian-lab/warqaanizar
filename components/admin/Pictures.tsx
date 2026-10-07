@@ -5,6 +5,7 @@ import { uploadImage, uploadsReady } from '@/lib/cloudinary';
 import { prepare, REDUCTIONS, type Reduction } from '@/lib/compress';
 import { fingerprint, looks } from '@/lib/fingerprint';
 import { mediaUrl } from '@/lib/media';
+import { ask } from './Ask';
 import {
   captionPlate,
   describeMedia,
@@ -80,15 +81,23 @@ export function useUploader() {
           said.push(`${file.name} was already uploaded, so the existing one is used.`);
           continue;
         }
-        if (
-          twin?.kind === 'similar' &&
-          window.confirm(
-            `${file.name} looks like a picture already uploaded.\n\nOK uses the one already there. Cancel uploads this copy as well.`
-          )
-        ) {
-          done.push(twin.media);
-          said.push(`${file.name} matched a picture already uploaded, so that one is used.`);
-          continue;
+        if (twin?.kind === 'similar') {
+          const answer = await ask({
+            title: `${file.name} looks like a picture you already uploaded`,
+            body: 'Using the one already there saves space. Upload it again only if this copy is different, such as a better crop.',
+            ok: 'Use the one already there',
+            extra: 'Upload this copy too',
+            cancel: 'Skip this picture'
+          });
+          if (!answer) {
+            said.push(`${file.name} was skipped.`);
+            continue;
+          }
+          if (answer.choice === 'ok') {
+            done.push(twin.media);
+            said.push(`${file.name} matched a picture already uploaded, so that one is used.`);
+            continue;
+          }
         }
 
         setProgress(`${prefix}compressing`);
@@ -258,9 +267,12 @@ export function Drop({
   onFiles,
   onPick,
   exclude,
+  replacing,
   children
 }: {
   multiple?: boolean;
+  /** a picture is already there, and this swaps it */
+  replacing?: boolean;
   busy: boolean;
   onFiles: (files: File[], reduction: Reduction) => void;
   /** choosing from pictures already uploaded */
@@ -273,10 +285,12 @@ export function Drop({
   const [over, setOver] = useState(false);
   const [library, setLibrary] = useState(false);
   const [reduction, setReduction] = useReduction();
+  // a setting she rarely touches, so it stays a sentence until asked for
+  const [sizing, setSizing] = useState(false);
 
   return (
     <div
-      className={`drop${over ? ' is-over' : ''}${busy ? ' is-busy' : ''}`}
+      className={`drop${over ? ' is-over' : ''}${busy ? ' is-busy' : ''}${replacing ? ' drop--quiet' : ''}`}
       onDragOver={(e) => {
         if (!e.dataTransfer.types.includes('Files')) return;
         e.preventDefault();
@@ -293,7 +307,7 @@ export function Drop({
       <div className="drop__main">
         {children}
         <button type="button" disabled={busy} onClick={() => input.current?.click()}>
-          {multiple ? 'Choose pictures' : 'Choose a picture'}
+          {multiple ? 'Choose pictures' : replacing ? 'Choose another' : 'Choose a picture'}
         </button>
         {onPick && (
           <button type="button" disabled={busy} onClick={() => setLibrary(true)}>
@@ -302,16 +316,25 @@ export function Drop({
         )}
       </div>
 
-      <label className="drop__squeeze">
-        <span>Pictures over 1 MB</span>
-        <select value={reduction} onChange={(e) => setReduction(Number(e.target.value) as Reduction)}>
-          {REDUCTIONS.map((r) => (
-            <option key={r} value={r}>
-              {r === 0 ? 'keep as they are' : `${r}% smaller`}
-            </option>
-          ))}
-        </select>
-      </label>
+      {sizing ? (
+        <label className="drop__squeeze">
+          <span>Pictures over 1 MB</span>
+          <select value={reduction} autoFocus onChange={(e) => setReduction(Number(e.target.value) as Reduction)} onBlur={() => setSizing(false)}>
+            {REDUCTIONS.map((r) => (
+              <option key={r} value={r}>
+                {r === 0 ? 'keep as they are' : `${r}% smaller`}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : (
+        <p className="drop__squeeze">
+          <span>{reduction === 0 ? 'Big pictures are kept as they are.' : `Big pictures are made ${reduction}% smaller.`}</span>
+          <button type="button" className="linkish" onClick={() => setSizing(true)}>
+            Change
+          </button>
+        </p>
+      )}
 
       <input
         ref={input}
@@ -516,8 +539,8 @@ export function SinglePicture({
   if (!uploadsReady()) return <NotReady />;
 
   return (
-    <section className="pic">
-      <h2 className="section-title">{title}</h2>
+    <section className="pic card" data-autosave>
+      <h2 className="card__title">{title}</h2>
       <p className="pic__hint">{hint}</p>
 
       {media ? (
@@ -525,19 +548,26 @@ export function SinglePicture({
           <Thumb media={media} ratio="4/3" />
           <div className="pic__fields">
             <Descriptions key={media.id} media={media} locale={locale} />
+            <Drop busy={Boolean(progress)} onFiles={onFiles} onPick={onPick} exclude={new Set(media ? [media.id] : [])} replacing>
+              <span className="pic__status">{progress ?? 'Drop a picture here to replace it, or'}</span>
+            </Drop>
             <div className="pic__actions">
-              <Drop busy={Boolean(progress)} onFiles={onFiles} onPick={onPick} exclude={new Set(media ? [media.id] : [])}>
-                <span className="pic__status">{progress ?? 'Replace it:'}</span>
-              </Drop>
               <button
                 type="button"
                 className="danger"
                 disabled={Boolean(progress)}
                 onClick={async () => {
-                  if (await attach(null)) setMedia(null);
+                  const answer = await ask({
+                    title: `Remove the ${title.toLowerCase()}?`,
+                    body: 'The picture stays in your uploads, so you can choose it again later.',
+                    ok: 'Remove it',
+                    cancel: 'Keep it',
+                    danger: true
+                  });
+                  if (answer && (await attach(null))) setMedia(null);
                 }}
               >
-                Remove
+                Remove the picture
               </button>
             </div>
           </div>

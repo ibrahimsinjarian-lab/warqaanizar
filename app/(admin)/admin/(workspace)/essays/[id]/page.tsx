@@ -4,12 +4,15 @@ import { supabaseServer } from '@/lib/supabase-server';
 import { saveEssay, startCounterpart, translatePiece, trashPiece, unpublishPiece } from '@/app/(admin)/actions';
 import Flash from '@/components/admin/Flash';
 import ClearFlags from '@/components/admin/ClearFlags';
-import { LocalePill, StatusPill, TranslationPill } from '@/components/admin/StatusPills';
+import { TranslationPill } from '@/components/admin/StatusPills';
+import EditorForm, { SaveBar } from '@/components/admin/EditorForm';
+import { flashFor, type EditorFlags } from '@/components/admin/DesignEditor';
 import { path } from '@/lib/i18n';
 import { toDateInput } from '@/lib/dates';
 import { toEditorHtml } from '@/lib/render';
 import RichText from '@/components/admin/RichText';
 import { SinglePicture } from '@/components/admin/Pictures';
+import { EmphasisField } from '@/components/admin/Fields';
 import type { Essay, Locale } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +22,7 @@ export default async function EssayEditor({
   searchParams
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ saved?: string; state?: string; error?: string; translated?: string; restored?: string; fresh?: string }>;
+  searchParams: Promise<EditorFlags>;
 }) {
   const { id } = await params;
   const flags = await searchParams;
@@ -41,27 +44,27 @@ export default async function EssayEditor({
     .maybeSingle();
 
   return (
-    <>
-      <div className="page-title">
+    <div className="editor">
+      <header className="ehead">
         <div>
+          <p className="crumbs">
+            <Link href="/admin/essays">Essays</Link>
+            <span aria-hidden="true">/</span>
+            <span>{locale === 'ar' ? 'Arabic' : 'English'}</span>
+          </p>
           <h1 dir={rtl ? 'rtl' : 'ltr'}>{essay.title}</h1>
-          <p style={{ display: 'flex', gap: '.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <LocalePill locale={locale} />
-            <StatusPill status={essay.status} />
+          <p className="chips">
             <TranslationPill state={essay.translation_state} />
           </p>
         </div>
-        <div className="actions">
-          <Link className="button" href={path(locale, `preview/essays/${essay.id}`)} target="_blank">
-            Preview
-          </Link>
-          {essay.status === 'published' && (
-            <Link className="button" href={path(locale, `essays/${essay.slug}`)} target="_blank">
+        <div className="ehead__tools">
+          {live && (
+            <Link className="button button--quiet" href={path(locale, `essays/${essay.slug}`)} target="_blank">
               View on the site
             </Link>
           )}
           {siblingRow ? (
-            <Link className="button" href={`/admin/essays/${siblingRow.id}`}>
+            <Link className="button button--quiet" href={`/admin/essays/${siblingRow.id}`}>
               {siblingRow.locale === 'ar' ? 'Arabic version' : 'English version'}
             </Link>
           ) : (
@@ -70,43 +73,23 @@ export default async function EssayEditor({
                 <form action={translatePiece}>
                   <input type="hidden" name="kind" value="essays" />
                   <input type="hidden" name="id" value={essay.id} />
-                  <button type="submit">Translate to English</button>
+                  <button type="submit" className="button--quiet">Translate to English</button>
                 </form>
               )}
               <form action={startCounterpart}>
                 <input type="hidden" name="kind" value="essays" />
                 <input type="hidden" name="id" value={essay.id} />
-                <button type="submit">Write the other language myself</button>
+                <button type="submit" className="button--quiet">Write the other language myself</button>
               </form>
             </>
           )}
         </div>
-      </div>
+      </header>
 
       <ClearFlags />
-      <Flash
-        saved={
-          flags.saved
-            ? flags.state === 'published'
-              ? `Published. It is on the site now.`
-              : 'Saved as a draft. It is not on the site yet: press Publish it when you are ready.'
-            : flags.restored
-              ? 'Put back.'
-              : undefined
-        }
-        note={
-          flags.translated
-            ? 'Translated. Read it through, then press Publish it.'
-            : flags.fresh
-              ? 'An empty version in the other language. Write it, then publish it.'
-              : essay.translation_state === 'machine'
-                ? 'A machine wrote this translation and nobody has read it yet. When you are happy with it, press Publish it.'
-                : undefined
-        }
-        error={flags.error}
-      />
+      <Flash {...flashFor(flags, essay.translation_state === 'machine')} />
 
-      <form action={saveEssay.bind(null, live ? 'publish' : 'save')} className="form">
+      <EditorForm action={saveEssay}>
         <input type="hidden" name="id" value={essay.id} />
         <input type="hidden" name="locale" value={locale} />
         <input type="hidden" name="previousSlug" value={essay.slug} />
@@ -115,43 +98,19 @@ export default async function EssayEditor({
         <input type="hidden" name="currentStatus" value={essay.status} />
         <input type="hidden" name="previousPublishedAt" value={essay.published_at ?? ''} />
 
-        <div className="actionbar">
-          <span className="actionbar__state">
-            {live ? (
-              <>
-                <span className="pill pill--live">live</span>
-                <span className="mute">Anyone can read this.</span>
-              </>
-            ) : (
-              <>
-                <span className="pill pill--draft">draft</span>
-                <span className="mute">Only you can see this.</span>
-              </>
-            )}
-          </span>
-          <span className="grow" />
-          {live ? (
-            <button type="submit" className="primary">
-              Save and update the page
-            </button>
-          ) : (
-            <>
-              <button type="submit">Save draft</button>
-              <button type="submit" formAction={saveEssay.bind(null, 'publish')} className="primary">
-                Publish it
-              </button>
-            </>
-          )}
-        </div>
+        <SaveBar live={live} previewUrl={path(locale, `preview/essays/${essay.id}`)} />
 
         <div className="cols">
           <div className="cols__main">
             <div className="card">
-              <div className="field">
-                <label htmlFor="title">Title</label>
-                <input id="title" name="title" type="text" defaultValue={essay.title} dir={rtl ? 'rtl' : 'ltr'} required />
-                <small>A word between *asterisks* is set in italic, the way the old titles were.</small>
-              </div>
+              <EmphasisField
+                id="title"
+                label="Title"
+                defaultValue={essay.title}
+                dir={rtl ? 'rtl' : 'ltr'}
+                required
+                hint="Put a word between *asterisks* to set it in italic."
+              />
 
               <div className="field">
                 <label htmlFor="excerpt">Summary</label>
@@ -161,9 +120,10 @@ export default async function EssayEditor({
             </div>
 
             <div className="field">
-              <label htmlFor="body">The essay</label>
+              <label id="body-label">The essay</label>
               <RichText
                 name="body"
+                labelledBy="body-label"
                 defaultValue={toEditorHtml(essay.body, essay.content_format)}
                 dir={rtl ? 'rtl' : 'ltr'}
                 minHeight="30rem"
@@ -177,7 +137,7 @@ export default async function EssayEditor({
               initial={essay.cover ?? null}
               locale={locale}
               title="Cover picture"
-              hint="Optional. Wide at the top of the essay, and when the link is shared."
+              hint="Optional. Wide at the top of the essay, and when the link is shared. Saves the moment you choose it."
             />
 
             <div className="card">
@@ -199,8 +159,9 @@ export default async function EssayEditor({
               </div>
 
               <div className="field">
-                <label htmlFor="published_at">Date</label>
+                <label htmlFor="published_at">Publish date</label>
                 <input id="published_at" name="published_at" type="date" defaultValue={toDateInput(essay.published_at)} />
+                <small>Shown on the essay, and sets the order. Leave it empty and it becomes the day you publish.</small>
               </div>
             </div>
 
@@ -208,9 +169,10 @@ export default async function EssayEditor({
               <summary>Address and search engines</summary>
               <div className="field">
                 <label htmlFor="slug">Address</label>
-                <input id="slug" name="slug" type="text" defaultValue={essay.slug} />
+                <input id="slug" name="slug" type="text" dir="ltr" defaultValue={essay.slug} />
                 <small>
-                  {path(locale, 'essays')}/<strong>{essay.slug}</strong>. Leave it and it follows the title.
+                  {path(locale, 'essays')}/<strong>{essay.slug}</strong>. Leave it and it follows the title. If it changes, the old
+                  address keeps working.
                 </small>
               </div>
               <div className="field">
@@ -226,7 +188,7 @@ export default async function EssayEditor({
             </details>
           </aside>
         </div>
-      </form>
+      </EditorForm>
 
       <details className="drawer drawer--danger">
         <summary>Take it off the site, or delete it</summary>
@@ -241,20 +203,18 @@ export default async function EssayEditor({
               <button type="submit">Unpublish it</button>
             </form>
           )}
-          <div className="drawer__row">
-          <p>Deleting moves it to the trash and off the site. You can put it back from the trash.</p>
-        <form action={trashPiece}>
-          <input type="hidden" name="kind" value="essays" />
-          <input type="hidden" name="id" value={essay.id} />
-          <input type="hidden" name="locale" value={locale} />
-          <input type="hidden" name="slug" value={essay.slug} />
-          <button type="submit" className="danger">
-            Move it to the trash
-          </button>
-        </form>
-          </div>
+          <form action={trashPiece} className="drawer__row">
+            <input type="hidden" name="kind" value="essays" />
+            <input type="hidden" name="id" value={essay.id} />
+            <input type="hidden" name="locale" value={locale} />
+            <input type="hidden" name="slug" value={essay.slug} />
+            <p>Deleting moves it to the trash and off the site. You can put it back from the trash.</p>
+            <button type="submit" className="danger">
+              Move it to the trash
+            </button>
+          </form>
         </div>
       </details>
-    </>
+    </div>
   );
 }

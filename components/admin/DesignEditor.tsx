@@ -2,9 +2,10 @@ import Link from 'next/link';
 import { saveDesign, startCounterpart, translatePiece, trashPiece, unpublishPiece } from '@/app/(admin)/actions';
 import Flash from './Flash';
 import ClearFlags from './ClearFlags';
-import { LocalePill, StatusPill, TranslationPill } from './StatusPills';
+import { TranslationPill } from './StatusPills';
 import { SinglePicture } from './Pictures';
 import ProjectBuilder from './ProjectBuilder';
+import EditorForm, { SaveBar } from './EditorForm';
 import { path } from '@/lib/i18n';
 import { toDateInput } from '@/lib/dates';
 import type { PlateRow } from '@/app/(admin)/media-actions';
@@ -15,17 +16,42 @@ import type { Design, DesignSection, Layout, Locale } from '@/lib/types';
  *
  * Writing sits in one column at a readable width; everything about the
  * project rather than in it sits in the rail beside it. There is one
- * button that changes what readers see, and it says so.
+ * bar that changes what readers see, and it is the one place that says
+ * whether the page is live.
  */
 
 export type EditorFlags = {
   saved?: string;
-  state?: string;
   error?: string;
   translated?: string;
   restored?: string;
   fresh?: string;
+  unpublished?: string;
+  start?: string;
 };
+
+/** The messages that arrive in the address, after a step that left the page. */
+export function flashFor(flags: EditorFlags, machine: boolean) {
+  return {
+    saved: flags.saved
+      ? 'Saved as a draft. It is not on the site yet: press Publish it when you are ready.'
+      : flags.restored
+        ? 'Put back from the trash.'
+        : flags.unpublished
+          ? 'Taken off the site. It is a draft again, and nothing was lost.'
+          : undefined,
+    note: flags.start
+      ? 'Saved as a draft. Add the pictures and a cover below, then press Publish it.'
+      : flags.translated
+      ? 'Translated. Read it through, then press Publish it.'
+      : flags.fresh
+        ? 'An empty version in the other language. Write it, then publish it.'
+        : machine
+          ? 'A machine wrote this translation and nobody has read it yet. When you are happy with it, press Publish it.'
+          : undefined,
+    error: flags.error
+  };
+}
 
 export default function DesignEditor({
   design,
@@ -57,23 +83,18 @@ export default function DesignEditor({
           </p>
           <h1 dir={rtl ? 'rtl' : 'ltr'}>{design.title}</h1>
           <p className="chips">
-            <LocalePill locale={locale} />
-            <StatusPill status={design.status} />
             <TranslationPill state={design.translation_state} />
           </p>
         </div>
 
         <div className="ehead__tools">
-          <Link className="button" href={path(locale, `preview/designs/${design.id}`)} target="_blank">
-            Preview
-          </Link>
           {live && (
-            <Link className="button" href={path(locale, `designs/${design.slug}`)} target="_blank">
+            <Link className="button button--quiet" href={path(locale, `designs/${design.slug}`)} target="_blank">
               View on the site
             </Link>
           )}
           {sibling ? (
-            <Link className="button" href={`/admin/designs/${sibling.id}`}>
+            <Link className="button button--quiet" href={`/admin/designs/${sibling.id}`}>
               {sibling.locale === 'ar' ? 'Arabic version' : 'English version'}
             </Link>
           ) : (
@@ -82,13 +103,13 @@ export default function DesignEditor({
                 <form action={translatePiece}>
                   <input type="hidden" name="kind" value="designs" />
                   <input type="hidden" name="id" value={design.id} />
-                  <button type="submit">Translate to English</button>
+                  <button type="submit" className="button--quiet">Translate to English</button>
                 </form>
               )}
               <form action={startCounterpart}>
                 <input type="hidden" name="kind" value="designs" />
                 <input type="hidden" name="id" value={design.id} />
-                <button type="submit">Write the other language myself</button>
+                <button type="submit" className="button--quiet">Write the other language myself</button>
               </form>
             </>
           )}
@@ -96,29 +117,9 @@ export default function DesignEditor({
       </header>
 
       <ClearFlags />
-      <Flash
-        saved={
-          flags.saved
-            ? flags.state === 'published'
-              ? 'Published. It is on the site now.'
-              : 'Saved as a draft. It is not on the site yet: press Publish it when you are ready.'
-            : flags.restored
-              ? 'Put back.'
-              : undefined
-        }
-        note={
-          flags.translated
-            ? 'Translated. Read it through, then press Publish it.'
-            : flags.fresh
-              ? 'An empty version in the other language. Write it, then publish it.'
-              : design.translation_state === 'machine'
-                ? 'A machine wrote this translation and nobody has read it yet. When you are happy with it, press Publish it.'
-                : undefined
-        }
-        error={flags.error}
-      />
+      <Flash {...flashFor(flags, design.translation_state === 'machine')} />
 
-      <form action={saveDesign.bind(null, live ? 'publish' : 'save')} className="form">
+      <EditorForm action={saveDesign}>
         <input type="hidden" name="id" value={design.id} />
         <input type="hidden" name="locale" value={locale} />
         <input type="hidden" name="previousSlug" value={design.slug} />
@@ -127,35 +128,7 @@ export default function DesignEditor({
         <input type="hidden" name="currentStatus" value={design.status} />
         <input type="hidden" name="previousPublishedAt" value={design.published_at ?? ''} />
 
-        {/* one button changes what readers see, and it says which */}
-        <div className="actionbar">
-          <span className="actionbar__state">
-            {live ? (
-              <>
-                <span className="pill pill--live">live</span>
-                <span className="mute">Anyone can read this.</span>
-              </>
-            ) : (
-              <>
-                <span className="pill pill--draft">draft</span>
-                <span className="mute">Only you can see this.</span>
-              </>
-            )}
-          </span>
-          <span className="grow" />
-          {live ? (
-            <button type="submit" className="primary">
-              Save and update the page
-            </button>
-          ) : (
-            <>
-              <button type="submit">Save draft</button>
-              <button type="submit" formAction={saveDesign.bind(null, 'publish')} className="primary">
-                Publish it
-              </button>
-            </>
-          )}
-        </div>
+        <SaveBar live={live} previewUrl={path(locale, `preview/designs/${design.id}`)} />
 
         <div className="cols">
           <div className="cols__main">
@@ -193,7 +166,7 @@ export default function DesignEditor({
               initial={design.cover ?? null}
               locale={locale}
               title="Cover picture"
-              hint="On the projects grid, and when the link is shared. Both languages share it."
+              hint="On the projects grid, and when the link is shared. Both languages share it. Saves the moment you choose it."
             />
 
             <div className="card">
@@ -211,6 +184,7 @@ export default function DesignEditor({
                   <option value="interior">Interior</option>
                   <option value="architectural">Architectural</option>
                 </select>
+                <small>Which button on the projects page shows it.</small>
               </div>
 
               <div className="pair">
@@ -220,20 +194,20 @@ export default function DesignEditor({
                 </div>
                 <div className="field">
                   <label htmlFor="spec_year">Year</label>
-                  <input id="spec_year" name="spec_year" type="text" defaultValue={design.spec_year ?? ''} />
+                  <input id="spec_year" name="spec_year" type="text" inputMode="numeric" defaultValue={design.spec_year ?? ''} />
                 </div>
               </div>
 
-              <div className="pair">
-                <div className="field">
-                  <label htmlFor="spec_status">Stage</label>
-                  <input id="spec_status" name="spec_status" type="text" defaultValue={design.spec_status ?? ''} dir={rtl ? 'rtl' : 'ltr'} />
-                  <small>Study, proposal, built.</small>
-                </div>
-                <div className="field">
-                  <label htmlFor="published_at">Date</label>
-                  <input id="published_at" name="published_at" type="date" defaultValue={toDateInput(design.published_at)} />
-                </div>
+              <div className="field">
+                <label htmlFor="spec_status">Stage</label>
+                <input id="spec_status" name="spec_status" type="text" defaultValue={design.spec_status ?? ''} dir={rtl ? 'rtl' : 'ltr'} />
+                <small>Study, proposal, built.</small>
+              </div>
+
+              <div className="field">
+                <label htmlFor="published_at">Publish date</label>
+                <input id="published_at" name="published_at" type="date" defaultValue={toDateInput(design.published_at)} />
+                <small>Sets the order of the projects. Leave it empty and it becomes the day you publish.</small>
               </div>
             </div>
 
@@ -241,23 +215,25 @@ export default function DesignEditor({
               <summary>Address and search engines</summary>
               <div className="field">
                 <label htmlFor="slug">Address</label>
-                <input id="slug" name="slug" type="text" defaultValue={design.slug} />
+                <input id="slug" name="slug" type="text" dir="ltr" defaultValue={design.slug} />
                 <small>
-                  {path(locale, 'designs')}/<strong>{design.slug}</strong>
+                  {path(locale, 'designs')}/<strong>{design.slug}</strong>. If it changes, the old address keeps working.
                 </small>
               </div>
               <div className="field">
                 <label htmlFor="seo_title">Title for search engines</label>
                 <input id="seo_title" name="seo_title" type="text" defaultValue={design.seo_title ?? ''} />
+                <small>Leave empty to use the title above.</small>
               </div>
               <div className="field">
                 <label htmlFor="seo_description">Description for search engines</label>
                 <input id="seo_description" name="seo_description" type="text" defaultValue={design.seo_description ?? ''} />
+                <small>Leave empty to use the line about it.</small>
               </div>
             </details>
           </aside>
         </div>
-      </form>
+      </EditorForm>
 
       <details className="drawer drawer--danger">
         <summary>Take it off the site, or delete it</summary>

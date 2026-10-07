@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './admin.css';
+import { AskHost } from '@/components/admin/Ask';
 
 export const metadata: Metadata = {
   title: { default: 'Editor . Warqaa Nizar', template: '%s . Editor' },
@@ -19,7 +20,10 @@ export default function AdminRootLayout({ children }: { children: React.ReactNod
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME }} />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <AskHost />
+      </body>
     </html>
   );
 }

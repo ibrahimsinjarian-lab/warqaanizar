@@ -46,29 +46,43 @@ async function rememberOldSlug(kind: Kind, locale: Locale, oldSlug: string, newS
   await supabase.from('slug_history').delete().eq('kind', kind).eq('locale', locale).eq('old_slug', newSlug);
 }
 
-export type Intent = 'save' | 'publish' | 'unpublish';
+export type Intent = 'save' | 'publish';
 
-/** Which button was pressed decides the status. */
+/**
+ * What a save tells the page. The editor stays where it is, with the cursor
+ * where it was, and shows this beside the Save button.
+ */
+export type SaveResult =
+  | { ok: true; status: 'draft' | 'published'; change: 'published' | 'saved'; at: number }
+  | { ok: false; error: string; at: number }
+  | null;
+
+const failed = (error: string): SaveResult => ({ ok: false, error, at: Date.now() });
+
+/** Which button was pressed. Save keeps the status it had; Publish makes it live. */
+function intentOf(form: FormData): Intent {
+  return str(form, 'intent') === 'publish' ? 'publish' : 'save';
+}
+
 function statusFrom(intent: Intent, form: FormData): 'draft' | 'published' {
   if (intent === 'publish') return 'published';
-  if (intent === 'unpublish') return 'draft';
   return str(form, 'currentStatus') === 'published' ? 'published' : 'draft';
 }
 
+function saved(status: 'draft' | 'published', form: FormData): SaveResult {
+  const before = str(form, 'currentStatus');
+  const change = status === 'published' && before !== 'published' ? 'published' : 'saved';
+  return { ok: true, status, change, at: Date.now() };
+}
+
 /**
- * The words inside each section, in the language of the page being edited,
- * and the layout, which both languages share.
+ * The words inside each section, in the language of the page being edited.
+ * The layout is not here: like the pictures, it saves the moment it is chosen.
  */
 async function saveSections(form: FormData, locale: Locale): Promise<string | null> {
   const groupId = str(form, 'group_id');
   if (!groupId) return null;
   const supabase = await supabaseServer();
-
-  const layout = str(form, 'layout') === 'sections' ? 'sections' : 'slideshow';
-  if (str(form, 'layout')) {
-    const { error } = await supabase.from('designs').update({ layout }).eq('group_id', groupId);
-    if (error && !/layout/.test(error.message)) return error.message;
-  }
 
   const ids = form.getAll('section_id').map(String).filter(Boolean);
   const results = await Promise.all(
@@ -91,7 +105,8 @@ async function saveSections(form: FormData, locale: Locale): Promise<string | nu
 
 /* -------------------------------------------------------------------- save */
 
-export async function saveEssay(intent: Intent, form: FormData) {
+export async function saveEssay(_previous: SaveResult, form: FormData): Promise<SaveResult> {
+  const intent = intentOf(form);
   const id = str(form, 'id');
   const locale = str(form, 'locale') as Locale;
   const previousSlug = str(form, 'previousSlug');
@@ -127,15 +142,18 @@ export async function saveEssay(intent: Intent, form: FormData) {
   const supabase = await supabaseServer();
   const { data: written, error } = await supabase.from('essays').update(patch).eq('id', id).select('id, status');
 
-  if (error) redirect(`/admin/essays/${id}?error=${encodeURIComponent(error.message)}`);
-  if (!written || written.length === 0) redirect(`/admin/essays/${id}?error=${encodeURIComponent(NOT_WRITTEN)}`);
+  if (error) return failed(error.message);
+  if (!written || written.length === 0) return failed(NOT_WRITTEN);
 
   await rememberOldSlug('essays', locale, previousSlug, slug, id);
   refresh('essays', locale, slug, previousSlug);
-  redirect(`/admin/essays/${id}?saved=1&state=${written[0].status}`);
+  // the editor redraws with what was written: the new address, the status
+  revalidatePath(`/admin/essays/${id}`);
+  return saved(written[0].status, form);
 }
 
-export async function saveDesign(intent: Intent, form: FormData) {
+export async function saveDesign(_previous: SaveResult, form: FormData): Promise<SaveResult> {
+  const intent = intentOf(form);
   const id = str(form, 'id');
   const locale = str(form, 'locale') as Locale;
   const previousSlug = str(form, 'previousSlug');
@@ -169,17 +187,16 @@ export async function saveDesign(intent: Intent, form: FormData) {
   const supabase = await supabaseServer();
   const { data: written, error } = await supabase.from('designs').update(patch).eq('id', id).select('id, status');
 
-  if (error) redirect(`/admin/designs/${id}?error=${encodeURIComponent(error.message)}`);
-  if (!written || written.length === 0) redirect(`/admin/designs/${id}?error=${encodeURIComponent(NOT_WRITTEN)}`);
+  if (error) return failed(error.message);
+  if (!written || written.length === 0) return failed(NOT_WRITTEN);
 
   const sectionError = await saveSections(form, locale);
-  if (sectionError) redirect(`/admin/designs/${id}?error=${encodeURIComponent(sectionError)}`);
+  if (sectionError) return failed(sectionError);
 
   await rememberOldSlug('designs', locale, previousSlug, slug, id);
   refresh('designs', locale, slug, previousSlug);
-  // the layout is shared, so the page in the other language changes too
-  revalidatePath('/', 'layout');
-  redirect(`/admin/designs/${id}?saved=1&state=${written[0].status}`);
+  revalidatePath(`/admin/designs/${id}`);
+  return saved(written[0].status, form);
 }
 
 /**
@@ -200,7 +217,7 @@ export async function unpublishPiece(form: FormData) {
   if (!data || data.length === 0) redirect(`/admin/${kind}/${id}?error=${encodeURIComponent(NOT_WRITTEN)}`);
 
   refresh(kind, locale, slug);
-  redirect(`/admin/${kind}/${id}?saved=1&state=${data[0].status}`);
+  redirect(`/admin/${kind}/${id}?unpublished=1`);
 }
 
 /* ------------------------------------------------------------------- trash */
@@ -223,7 +240,8 @@ export async function trashPiece(form: FormData) {
   if (!data || data.length === 0) redirect(`/admin/${kind}/${id}?error=${encodeURIComponent(NOT_WRITTEN)}`);
 
   refresh(kind, locale, slug);
-  redirect(`/admin/${kind}?trashed=1`);
+  // the list says so, and offers to put it straight back
+  redirect(`/admin/${kind}?trashed=${id}`);
 }
 
 export async function restorePiece(form: FormData) {
@@ -413,7 +431,7 @@ export async function translatePiece(form: FormData) {
 
 /* ---------------------------------------------------------------- settings */
 
-export async function saveSettings(form: FormData) {
+export async function saveSettings(_previous: SaveResult, form: FormData): Promise<SaveResult> {
   const locale = str(form, 'locale') as Locale;
 
   const lines = (name: string) =>
@@ -452,11 +470,12 @@ export async function saveSettings(form: FormData) {
   const supabase = await supabaseServer();
   const { data, error } = await supabase.from('site_settings').update(patch).eq('locale', locale).select('locale');
 
-  if (error) redirect(`/admin/settings?locale=${locale}&error=${encodeURIComponent(error.message)}`);
-  if (!data || data.length === 0) redirect(`/admin/settings?locale=${locale}&error=${encodeURIComponent(NOT_WRITTEN)}`);
+  if (error) return failed(error.message);
+  if (!data || data.length === 0) return failed(NOT_WRITTEN);
 
   revalidatePath(path(locale));
   revalidatePath(path(locale, 'essays'));
   revalidatePath(path(locale, 'designs'));
-  redirect(`/admin/settings?locale=${locale}&saved=1`);
+  revalidatePath('/admin/settings');
+  return { ok: true, status: 'published', change: 'saved', at: Date.now() };
 }

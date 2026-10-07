@@ -10,7 +10,7 @@ import { useEffect } from 'react';
 export default function ClearFlags() {
   useEffect(() => {
     const url = new URL(window.location.href);
-    const noisy = ['saved', 'error', 'translated', 'restored', 'fresh', 'trashed', 'purged', 'deleted'];
+    const noisy = ['saved', 'error', 'translated', 'restored', 'fresh', 'trashed', 'purged', 'deleted', 'unpublished', 'start', 'reset'];
     const had = noisy.filter((k) => url.searchParams.has(k));
     if (had.length === 0) return;
 
