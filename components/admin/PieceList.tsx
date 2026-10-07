@@ -75,7 +75,9 @@ export default async function PieceList({
           {[...groups.values()].map((versions) => {
             const ar = versions.find((v) => v.locale === 'ar');
             const en = versions.find((v) => v.locale === 'en');
-            const lead = ar ?? en!;
+            // the editor is in English, so the English title leads and the Arabic one sits under it
+            const lead = en ?? ar!;
+            const other = lead === en ? ar : null;
 
             return (
               <div className="row" key={lead.group_id} style={{ gridTemplateColumns: '1fr auto' }}>
@@ -83,6 +85,11 @@ export default async function PieceList({
                   <div className="row__title">
                     <Link href={`/admin/${kind}/${lead.id}`}>{lead.title}</Link>
                   </div>
+                  {other && (
+                    <div className="row__second" dir="rtl">
+                      {other.title}
+                    </div>
+                  )}
                   <div className="row__meta">/{lead.slug}</div>
                 </div>
                 <div className="actions" style={{ padding: 0 }}>

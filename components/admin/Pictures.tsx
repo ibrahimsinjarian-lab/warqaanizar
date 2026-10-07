@@ -302,20 +302,16 @@ export function Drop({
         )}
       </div>
 
-      <div className="drop__squeeze" role="group" aria-label="Compression for pictures over 1 MB">
-        <span>Pictures over 1 MB:</span>
-        {REDUCTIONS.map((r) => (
-          <button
-            key={r}
-            type="button"
-            className="drop__chip"
-            aria-pressed={reduction === r}
-            onClick={() => setReduction(r)}
-          >
-            {r === 0 ? 'Keep as is' : `${r}% smaller`}
-          </button>
-        ))}
-      </div>
+      <label className="drop__squeeze">
+        <span>Pictures over 1 MB</span>
+        <select value={reduction} onChange={(e) => setReduction(Number(e.target.value) as Reduction)}>
+          {REDUCTIONS.map((r) => (
+            <option key={r} value={r}>
+              {r === 0 ? 'keep as they are' : `${r}% smaller`}
+            </option>
+          ))}
+        </select>
+      </label>
 
       <input
         ref={input}
@@ -389,7 +385,19 @@ export function AutoField({
         {state === 'saved' && <em className="pic__ok"> saved</em>}
         {state === 'error' && <em className="pic__needed"> not saved, try again</em>}
       </span>
-      <input type="text" value={text} dir={dir} onChange={(e) => setText(e.target.value)} onBlur={commit} />
+      <input
+        type="text"
+        value={text}
+        dir={dir}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={commit}
+        // these sit inside the page's form: Enter saves the words, not the whole page
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter') return;
+          e.preventDefault();
+          commit();
+        }}
+      />
     </label>
   );
 }

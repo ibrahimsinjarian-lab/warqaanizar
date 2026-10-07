@@ -152,96 +152,97 @@ export default function ProjectBuilder({ groupId, locale, initialLayout, initial
       <input type="hidden" name="group_id" value={groupId} />
       <input type="hidden" name="layout" value={layout} />
 
-      <div className="builder__head">
-        <div>
-          <h2 className="section-title">Layout</h2>
-          <p className="pic__hint">
-            {layout === 'slideshow'
-              ? 'One slideshow beside all the text. It stays in view while the reader scrolls.'
-              : 'Each section shows its own pictures beside its text, alternating sides down the page.'}{' '}
-            Shared by the Arabic and English pages. It changes on the site when you press Save or Publish.
-          </p>
+      <div className="card card--layout">
+        <div className="card__head">
+          <div>
+            <h2 className="card__title">Pictures and text</h2>
+            <p className="hint">
+              {layout === 'slideshow'
+                ? 'One slideshow beside all the text, staying in view as the reader scrolls.'
+                : 'Each section shows its own pictures beside its text, alternating sides.'}
+            </p>
+          </div>
+          <div className="segmented" role="group" aria-label="Layout">
+            <button type="button" aria-pressed={layout === 'slideshow'} onClick={() => setLayout('slideshow')}>
+              Slideshow
+            </button>
+            <button type="button" aria-pressed={layout === 'sections'} onClick={() => setLayout('sections')}>
+              In sections
+            </button>
+          </div>
         </div>
-        <div className="segmented" role="group" aria-label="Layout">
-          <button type="button" aria-pressed={layout === 'slideshow'} onClick={() => setLayout('slideshow')}>
-            Slideshow
-          </button>
-          <button type="button" aria-pressed={layout === 'sections'} onClick={() => setLayout('sections')}>
-            Pictures in sections
-          </button>
-        </div>
+
+        {!uploadsReady() && <NotReady />}
+        {problem && <p className="note note--bad">{problem}</p>}
+
+        {layout === 'slideshow' && (
+          <div className="slides">
+            <p className="hint hint--tight">In the order they play. Drag a picture, or use the arrows.</p>
+            {pictureList(plates, null, 'No pictures yet. Until there are, a drawn placeholder shows instead.')}
+          </div>
+        )}
       </div>
 
-      {!uploadsReady() && <NotReady />}
-      {problem && <p className="note">{problem}</p>}
-
-      <div className={`builder__body builder__body--${layout}`}>
-        <div className="builder__sections">
-          {sections.map((section, i) => {
-            const own = plates.filter((p) => p.section_id === section.id);
-            return (
-              <div className="sec" key={section.id}>
-                <input type="hidden" name="section_id" value={section.id} />
-                <div className="sec__bar">
-                  <span className="sec__num">{String(i + 1).padStart(2, '0')}</span>
-                  <input
-                    className="sec__heading"
-                    name={`section_heading_${section.id}`}
-                    type="text"
-                    dir={dir}
-                    defaultValue={heading(section)}
-                    placeholder="Heading (optional)"
-                    aria-label={`Heading of section ${i + 1}`}
-                  />
-                  <button type="button" aria-label="Move section up" disabled={i === 0} onClick={() => moveSection(i, i - 1)}>
+      <div className="sections">
+        {sections.map((section, i) => {
+          const own = plates.filter((p) => p.section_id === section.id);
+          return (
+            <section className="sec card" key={section.id}>
+              <input type="hidden" name="section_id" value={section.id} />
+              <header className="sec__bar">
+                <span className="sec__num">{String(i + 1).padStart(2, '0')}</span>
+                <input
+                  className="sec__heading"
+                  name={`section_heading_${section.id}`}
+                  type="text"
+                  dir={dir}
+                  defaultValue={heading(section)}
+                  placeholder="Heading, if you want one"
+                  aria-label={`Heading of section ${i + 1}`}
+                />
+                <span className="sec__tools">
+                  <button type="button" className="icon" aria-label="Move section up" disabled={i === 0} onClick={() => moveSection(i, i - 1)}>
                     &uarr;
                   </button>
                   <button
                     type="button"
+                    className="icon"
                     aria-label="Move section down"
                     disabled={i === sections.length - 1}
                     onClick={() => moveSection(i, i + 1)}
                   >
                     &darr;
                   </button>
-                  <button type="button" className="danger" onClick={() => dropSection(section, i)}>
-                    Remove
+                  <button type="button" className="icon icon--bad" aria-label="Remove this section" onClick={() => dropSection(section, i)}>
+                    &#10005;
                   </button>
+                </span>
+              </header>
+
+              <RichText name={`section_body_${section.id}`} defaultValue={bodies[section.id] ?? ''} dir={dir} minHeight="11rem" />
+
+              {layout === 'sections' && (
+                <div className="sec__pictures">
+                  <p className="hint hint--tight">Pictures beside this text</p>
+                  {pictureList(own, section.id, 'None yet.')}
                 </div>
+              )}
+            </section>
+          );
+        })}
 
-                <div className="sec__grid">
-                  <RichText name={`section_body_${section.id}`} defaultValue={bodies[section.id] ?? ''} dir={dir} minHeight="12rem" />
-                  {layout === 'sections' && (
-                    <div className="sec__pictures">
-                      {pictureList(own, section.id, 'No pictures in this section yet.')}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-
-          <button type="button" className="builder__add" disabled={busy} onClick={newSection}>
-            + Add a section
-          </button>
-        </div>
-
-        {layout === 'slideshow' ? (
-          <aside className="builder__slides">
-            <h3 className="builder__subhead">Slideshow</h3>
-            <p className="pic__hint">In the order they play. Drag a picture, or use the arrows.</p>
-            {pictureList(plates, null, 'No pictures yet. Until there are, a drawn placeholder shows instead.')}
-          </aside>
-        ) : (
-          loose.length > 0 && (
-            <div className="builder__loose">
-              <h3 className="builder__subhead">Not in a section</h3>
-              <p className="pic__hint">These show after the last section. Pick a section for each to place it.</p>
-              {pictureList(loose, null, '')}
-            </div>
-          )
-        )}
+        <button type="button" className="addsection" disabled={busy} onClick={newSection}>
+          {busy ? 'Adding' : 'Add a section'}
+        </button>
       </div>
+
+      {layout === 'sections' && loose.length > 0 && (
+        <div className="card">
+          <h2 className="card__title">Not in a section</h2>
+          <p className="hint">These show after the last section. Open a picture and pick a section to place it.</p>
+          {pictureList(loose, null, '')}
+        </div>
+      )}
     </div>
   );
 }
