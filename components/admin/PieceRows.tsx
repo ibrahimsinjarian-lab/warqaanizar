@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { LocalePill, StatusPill, TranslationPill } from './StatusPills';
+import { LinkSpinner } from './Pending';
 
 /**
  * The list of essays or projects, with a search box and a choice of order.
@@ -79,7 +80,10 @@ export default function PieceRows({ kind, groups }: { kind: 'essays' | 'designs'
             <div className="row row--link" key={key}>
               <div>
                 <div className="row__title">
-                  <Link href={`/admin/${kind}/${lead.id}`}>{lead.title}</Link>
+                  <Link href={`/admin/${kind}/${lead.id}`}>
+                    {lead.title}
+                    <LinkSpinner />
+                  </Link>
                 </div>
                 {other && (
                   <div className="row__second" dir="rtl">
@@ -93,6 +97,7 @@ export default function PieceRows({ kind, groups }: { kind: 'essays' | 'designs'
                   <Link className="button version" href={`/admin/${kind}/${ar.id}`} aria-label={`Arabic version, ${ar.status === 'published' ? 'live' : 'draft'}`}>
                     <LocalePill locale="ar" />
                     <StatusPill status={ar.status} />
+                    <LinkSpinner />
                   </Link>
                 )}
                 {en ? (
@@ -100,6 +105,7 @@ export default function PieceRows({ kind, groups }: { kind: 'essays' | 'designs'
                     <LocalePill locale="en" />
                     <TranslationPill state={en.translation_state} />
                     <StatusPill status={en.status} />
+                    <LinkSpinner />
                   </Link>
                 ) : (
                   <span className="pill">no English version</span>

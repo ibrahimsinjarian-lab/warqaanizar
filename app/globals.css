@@ -808,6 +808,7 @@ html[lang="ar"] .latin { font-family: var(--serif); letter-spacing: clamp(.16em,
   letter-spacing: .1em; text-transform: uppercase;
 }
 .previewbar a { text-decoration: underline; text-underline-offset: 3px; }
+.previewbar__sync { opacity: .75; }
 html[lang="ar"] .previewbar { font-family: var(--ar-ui); letter-spacing: 0; text-transform: none; font-size: .85rem; }
 
 /* =========================================================

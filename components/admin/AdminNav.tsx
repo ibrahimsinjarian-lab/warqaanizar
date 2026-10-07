@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { LinkSpinner } from './Pending';
 import { usePathname } from 'next/navigation';
 
 const LINKS: [string, string][] = [
@@ -20,6 +21,7 @@ export default function AdminNav() {
         return (
           <Link key={href} href={href} aria-current={active ? 'page' : undefined}>
             {label}
+            <LinkSpinner />
           </Link>
         );
       })}

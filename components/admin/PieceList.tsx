@@ -4,6 +4,7 @@ import { restorePiece } from '@/app/(admin)/actions';
 import Flash from './Flash';
 import ClearFlags from './ClearFlags';
 import PieceRows, { type Group } from './PieceRows';
+import { LinkSpinner, SubmitButton } from './Pending';
 
 interface Row {
   id: string;
@@ -70,6 +71,7 @@ export default async function PieceList({
           </Link>
           <Link className="button button--primary" href={`/admin/${kind}/new`}>
             New {words.one}
+            <LinkSpinner />
           </Link>
         </div>
       </div>
@@ -80,9 +82,9 @@ export default async function PieceList({
           <input type="hidden" name="kind" value={kind} />
           <input type="hidden" name="id" value={trashed} />
           <span>Moved to the trash, and off the site.</span>
-          <button type="submit" className="linkish">
+          <SubmitButton className="linkish" busy="Putting it back">
             Undo
-          </button>
+          </SubmitButton>
         </form>
       )}
       <Flash {...message} />

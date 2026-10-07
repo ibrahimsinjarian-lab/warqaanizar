@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { supabaseServer } from '@/lib/supabase-server';
 import { purgePiece, restorePiece } from '@/app/(admin)/actions';
 import { LocalePill } from './StatusPills';
+import { SubmitButton } from './Pending';
 
 interface Row {
   id: string;
@@ -64,7 +65,7 @@ export default async function Trash({
                 <form action={restorePiece}>
                   <input type="hidden" name="kind" value={kind} />
                   <input type="hidden" name="id" value={row.id} />
-                  <button type="submit">Put it back</button>
+                  <SubmitButton busy="Putting it back">Put it back</SubmitButton>
                 </form>
                 <details className="danger-zone" style={{ margin: 0, padding: '.2rem .5rem' }}>
                   <summary>Delete forever</summary>
@@ -72,9 +73,9 @@ export default async function Trash({
                   <form action={purgePiece}>
                     <input type="hidden" name="kind" value={kind} />
                     <input type="hidden" name="id" value={row.id} />
-                    <button type="submit" className="danger">
+                    <SubmitButton className="danger" busy="Deleting">
                       Delete it forever
-                    </button>
+                    </SubmitButton>
                   </form>
                 </details>
               </div>

@@ -1,6 +1,7 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { currentAdmin, supabaseServer } from '@/lib/supabase-server';
+import { SubmitButton } from '@/components/admin/Pending';
 
 export const dynamic = 'force-dynamic';
 
@@ -98,9 +99,9 @@ export default async function LoginPage({
             <label htmlFor="password">Password</label>
             <input id="password" name="password" type="password" required autoComplete="current-password" />
           </div>
-          <button type="submit" className="primary">
+          <SubmitButton className="primary" busy="Signing in">
             Sign in
-          </button>
+          </SubmitButton>
         </form>
 
         <details className="drawer" open={Boolean(forgot)}>
@@ -111,7 +112,7 @@ export default async function LoginPage({
               <input id="reset-email" name="email" type="email" required autoComplete="username" autoFocus={Boolean(forgot)} />
               <small>We send a link to this address. It lets you choose a new password.</small>
             </div>
-            <button type="submit">Send me a link</button>
+            <SubmitButton busy="Sending">Send me a link</SubmitButton>
           </form>
         </details>
       </div>

@@ -4,6 +4,10 @@ import { createContext, startTransition, useActionState, useContext, useEffect, 
 import { useRouter } from 'next/navigation';
 import type { SaveResult } from '@/app/(admin)/actions';
 import { ask } from './Ask';
+import { NAVIGATING } from './NavProgress';
+
+/** A preview open in another tab listens here, and redraws after each save. */
+export const PREVIEW_CHANNEL = 'warqaa-preview';
 
 /**
  * The form around a page she edits: an essay, a project, the front page.
@@ -135,7 +139,10 @@ export default function EditorForm({
 
       e.preventDefault();
       e.stopPropagation();
-      decide(() => router.push(to.pathname + to.search + to.hash));
+      decide(() => {
+        window.dispatchEvent(new Event(NAVIGATING));
+        router.push(to.pathname + to.search + to.hash);
+      });
     };
 
     // another form on the page: translate, unpublish, trash, sign out
@@ -240,29 +247,24 @@ export function SaveBar({
           : `Saved at ${time(result.at)}. Still a draft.`;
   }
 
-  async function preview() {
-    if (!previewUrl) return;
-    if (!dirty) {
-      window.open(previewUrl, '_blank');
-      return;
-    }
-    if (!live) {
-      // opened now, while the click still counts, or the browser blocks it
-      const tab = window.open('', '_blank');
-      save('save', (r) => {
-        if (r?.ok && tab) tab.location.href = previewUrl;
-        else tab?.close();
-      });
-      return;
-    }
-    const answer = await ask({
-      title: 'The preview shows the last saved version',
-      body: 'Your newest changes are not in it. Saving would put them on the live page.',
-      ok: 'Preview anyway',
-      cancel: 'Stay here'
-    });
-    if (answer) window.open(previewUrl, '_blank');
+  // every save tells an open preview tab to redraw itself
+  useEffect(() => {
+    if (!result?.ok || !previewUrl || typeof BroadcastChannel === 'undefined') return;
+    const channel = new BroadcastChannel(PREVIEW_CHANNEL);
+    channel.postMessage(previewUrl);
+    channel.close();
+  }, [result, previewUrl]);
+
+  /**
+   * Preview is a plain link, which no browser blocks. A draft with changes
+   * is saved on the way: the preview tab opens at once and redraws itself
+   * as soon as the save lands. A live page is not saved, because saving it
+   * would publish the changes; its preview shows the last save.
+   */
+  function preview() {
+    if (dirty && !live) save('save');
   }
+  const previewLabel = !dirty ? 'Preview' : live ? 'Preview the last save' : 'Save and preview';
 
   return (
     <>
@@ -273,9 +275,16 @@ export function SaveBar({
         </span>
         <span className="grow" />
         {previewUrl && (
-          <button type="button" className="actionbar__quiet" onClick={preview} disabled={pending}>
-            {dirty && !live ? 'Save and preview' : 'Preview'}
-          </button>
+          <a
+            className="button actionbar__quiet"
+            href={previewUrl}
+            target="_blank"
+            rel="noopener"
+            onClick={preview}
+            title={dirty && live ? 'Your newest changes are not in it until you save, and saving updates the live page.' : undefined}
+          >
+            {previewLabel}
+          </a>
         )}
         {plain || live ? (
           <button type="submit" value="save" className="primary" disabled={pending} title={shortcut}>

@@ -6,6 +6,7 @@ import { TranslationPill } from './StatusPills';
 import { SinglePicture } from './Pictures';
 import ProjectBuilder from './ProjectBuilder';
 import EditorForm, { SaveBar } from './EditorForm';
+import { LinkSpinner, SubmitButton } from './Pending';
 import { path } from '@/lib/i18n';
 import { toDateInput } from '@/lib/dates';
 import type { PlateRow } from '@/app/(admin)/media-actions';
@@ -95,6 +96,7 @@ export default function DesignEditor({
           )}
           {sibling ? (
             <Link className="button button--quiet" href={`/admin/designs/${sibling.id}`}>
+              <LinkSpinner />
               {sibling.locale === 'ar' ? 'Arabic version' : 'English version'}
             </Link>
           ) : (
@@ -103,13 +105,17 @@ export default function DesignEditor({
                 <form action={translatePiece}>
                   <input type="hidden" name="kind" value="designs" />
                   <input type="hidden" name="id" value={design.id} />
-                  <button type="submit" className="button--quiet">Translate to English</button>
+                  <SubmitButton className="button--quiet" busy="Translating, about half a minute">
+                    Translate to English
+                  </SubmitButton>
                 </form>
               )}
               <form action={startCounterpart}>
                 <input type="hidden" name="kind" value="designs" />
                 <input type="hidden" name="id" value={design.id} />
-                <button type="submit" className="button--quiet">Write the other language myself</button>
+                <SubmitButton className="button--quiet" busy="Making the other version">
+                  Write the other language myself
+                </SubmitButton>
               </form>
             </>
           )}
@@ -245,7 +251,7 @@ export default function DesignEditor({
               <input type="hidden" name="locale" value={locale} />
               <input type="hidden" name="slug" value={design.slug} />
               <p>Unpublishing keeps everything and takes the page off the site. You can publish it again later.</p>
-              <button type="submit">Unpublish it</button>
+              <SubmitButton busy="Taking it off the site">Unpublish it</SubmitButton>
             </form>
           )}
           <form action={trashPiece} className="drawer__row">
@@ -254,9 +260,9 @@ export default function DesignEditor({
             <input type="hidden" name="locale" value={locale} />
             <input type="hidden" name="slug" value={design.slug} />
             <p>Deleting moves it to the trash and off the site. You can put it back from the trash.</p>
-            <button type="submit" className="danger">
+            <SubmitButton className="danger" busy="Moving it to the trash">
               Move it to the trash
-            </button>
+            </SubmitButton>
           </form>
         </div>
       </details>

@@ -684,3 +684,19 @@ fieldset.rowlist { border: 0; padding: 0; margin: 0; min-width: 0; gap: .45rem; 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* ---------- a click is always answered ---------- */
+
+/* the small turning circle on a link or button that is working */
+.spin { display: none; width: .85em; height: .85em; flex: none; border: 2px solid currentColor; border-inline-end-color: transparent; border-radius: 50%; opacity: .8; }
+.spin.is-on { display: inline-block; animation: spin .7s linear infinite; }
+.row__title .spin, .admin__links .spin { margin-inline-start: .45rem; vertical-align: -.1em; }
+button[aria-busy='true'] { cursor: progress; }
+button[aria-busy='true'][disabled] { opacity: .75; }
+
+/* the whole editor says it is busy while a page is on its way */
+html.is-navigating, html.is-navigating * { cursor: progress !important; }
+.navbar__progress { height: 3px; box-shadow: 0 0 8px var(--accent); }
+
+.skeleton__line--small { height: .7rem; width: 6rem; }
+.skeleton__bar { display: block; height: 3.6rem; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--line); animation: pulse 1.4s ease-in-out infinite; }

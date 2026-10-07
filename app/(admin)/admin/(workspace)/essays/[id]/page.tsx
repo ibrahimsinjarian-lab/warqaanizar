@@ -6,6 +6,7 @@ import Flash from '@/components/admin/Flash';
 import ClearFlags from '@/components/admin/ClearFlags';
 import { TranslationPill } from '@/components/admin/StatusPills';
 import EditorForm, { SaveBar } from '@/components/admin/EditorForm';
+import { LinkSpinner, SubmitButton } from '@/components/admin/Pending';
 import { flashFor, type EditorFlags } from '@/components/admin/DesignEditor';
 import { path } from '@/lib/i18n';
 import { toDateInput } from '@/lib/dates';
@@ -65,6 +66,7 @@ export default async function EssayEditor({
           )}
           {siblingRow ? (
             <Link className="button button--quiet" href={`/admin/essays/${siblingRow.id}`}>
+              <LinkSpinner />
               {siblingRow.locale === 'ar' ? 'Arabic version' : 'English version'}
             </Link>
           ) : (
@@ -73,13 +75,17 @@ export default async function EssayEditor({
                 <form action={translatePiece}>
                   <input type="hidden" name="kind" value="essays" />
                   <input type="hidden" name="id" value={essay.id} />
-                  <button type="submit" className="button--quiet">Translate to English</button>
+                  <SubmitButton className="button--quiet" busy="Translating, about half a minute">
+                    Translate to English
+                  </SubmitButton>
                 </form>
               )}
               <form action={startCounterpart}>
                 <input type="hidden" name="kind" value="essays" />
                 <input type="hidden" name="id" value={essay.id} />
-                <button type="submit" className="button--quiet">Write the other language myself</button>
+                <SubmitButton className="button--quiet" busy="Making the other version">
+                  Write the other language myself
+                </SubmitButton>
               </form>
             </>
           )}
@@ -200,7 +206,7 @@ export default async function EssayEditor({
               <input type="hidden" name="locale" value={locale} />
               <input type="hidden" name="slug" value={essay.slug} />
               <p>Unpublishing keeps everything and takes the page off the site. You can publish it again later.</p>
-              <button type="submit">Unpublish it</button>
+              <SubmitButton busy="Taking it off the site">Unpublish it</SubmitButton>
             </form>
           )}
           <form action={trashPiece} className="drawer__row">
@@ -209,9 +215,9 @@ export default async function EssayEditor({
             <input type="hidden" name="locale" value={locale} />
             <input type="hidden" name="slug" value={essay.slug} />
             <p>Deleting moves it to the trash and off the site. You can put it back from the trash.</p>
-            <button type="submit" className="danger">
+            <SubmitButton className="danger" busy="Moving it to the trash">
               Move it to the trash
-            </button>
+            </SubmitButton>
           </form>
         </div>
       </details>

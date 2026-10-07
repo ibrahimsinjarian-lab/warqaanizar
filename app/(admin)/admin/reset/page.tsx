@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { currentAdmin, supabaseServer } from '@/lib/supabase-server';
+import { SubmitButton } from '@/components/admin/Pending';
 
 export const metadata: Metadata = { title: 'New password' };
 export const dynamic = 'force-dynamic';
@@ -55,9 +56,9 @@ export default async function ResetPage({ searchParams }: { searchParams: Promis
             <label htmlFor="again">The same again</label>
             <input id="again" name="again" type="password" required minLength={8} autoComplete="new-password" />
           </div>
-          <button type="submit" className="primary">
+          <SubmitButton className="primary" busy="Saving">
             Save the new password
-          </button>
+          </SubmitButton>
         </form>
       </div>
     </div>

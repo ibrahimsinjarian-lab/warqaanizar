@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { supabaseServer } from '@/lib/supabase-server';
 import { StatusPill, TranslationPill, LocalePill } from '@/components/admin/StatusPills';
+import { LinkSpinner } from '@/components/admin/Pending';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +39,10 @@ function List({ kind, items }: { kind: 'essays' | 'designs'; items: Piece[] }) {
         <div className="row row--link row--wide" key={item.id}>
           <div>
             <div className="row__title">
-              <Link href={`/admin/${kind}/${item.id}`}>{item.title}</Link>
+              <Link href={`/admin/${kind}/${item.id}`}>
+                {item.title}
+                <LinkSpinner />
+              </Link>
             </div>
             <div className="row__meta">/{item.slug}</div>
           </div>
@@ -66,9 +70,11 @@ export default async function Overview() {
         <div className="actions">
           <Link className="button button--primary" href="/admin/essays/new">
             New essay
+            <LinkSpinner />
           </Link>
           <Link className="button" href="/admin/designs/new">
             New project
+            <LinkSpinner />
           </Link>
         </div>
       </div>
